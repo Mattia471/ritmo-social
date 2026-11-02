@@ -12,6 +12,8 @@ import { CreateEvent } from './pages/CreateEvent';
 import { Profile } from './pages/Profile';
 import { Auth } from './pages/Auth';
 import { ResetPassword } from './pages/ResetPassword';
+import { NotificationsPage } from './pages/Notifications';
+import { NotificationsProvider } from './lib/notifications';
 
 function ScrollToTop() {
   const route = useLocation();
@@ -35,10 +37,11 @@ function InsideApp() {
     <Route path="/chats/:roomId" element={<Chats/>}/>
     <Route path="/create" element={<CreateEvent/>}/>
     <Route path="/profile" element={<Profile/>}/>
+    <Route path="/notifications" element={<NotificationsPage/>}/>
     {!import.meta.env.VITE_SUPABASE_URL && <Route path="/anteprima-iscrizione" element={<Auth/>}/>}
     <Route path="/reset-password" element={<ResetPassword/>}/>
     <Route path="/plus" element={<Navigate to="/create" replace/>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes></Layout>;
 }
-export function App() { return <StoreProvider><ScrollToTop/><InsideApp/>{import.meta.env.PROD && <Analytics />}</StoreProvider>; }
+export function App() { return <StoreProvider><NotificationsProvider><ScrollToTop/><InsideApp/>{import.meta.env.PROD && <Analytics />}</NotificationsProvider></StoreProvider>; }

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Attendance, ChatMessage, NewEventInput, PrivateVenue, SpotEvent, UserProfile } from '../types';
+import type { Attendance, ChatMessage, NewEventInput, PrivateVenue, SpotEvent } from '../types';
 import { initialDemo, readDemo, resetDemo, saveDemo, type DemoState } from '../data/demo';
 import { isLive, supabase } from './supabase';
 
@@ -102,7 +102,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => { if (mounted) void refresh().catch(() => {}); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => { if (mounted) void refresh().catch(() => {}); })
       .subscribe();
-    return () => { mounted = false; auth.subscription.unsubscribe(); void supabase.removeChannel(realtime); };
+    return () => { mounted = false; auth.subscription.unsubscribe(); void supabase?.removeChannel(realtime); };
   }, [refresh]);
 
   const signIn = useCallback(async (email: string) => {

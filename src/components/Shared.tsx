@@ -5,9 +5,9 @@ import type { SpotEvent } from '../types';
 import { clock, distanceKm, tinyDate } from '../lib/geo';
 import { useStore } from '../lib/store';
 
-export const Brand = ({ compact = false }: { compact?: boolean }) => <Link to="/" className="brand" aria-label="Ritmo Social, home">
-  <span className="brand-mark"><span>R</span><i /></span>
-  {!compact && <span className="brand-word">ritmo<span className="brand-dot">.</span><small>SOCIAL DANCE CLUB</small></span>}
+export const Brand = ({ compact = false }: { compact?: boolean }) => <Link to="/" className="brand" aria-label="Ritmo Social, torna alla home">
+  <img className="brand-icon" src="/logo-icon.svg" alt="" width="42" height="42" />
+  {!compact && <span className="brand-word">Ritmo <span className="brand-dot">Social</span><small>DANCE · MEET · REPEAT</small></span>}
 </Link>;
 
 export const Avatar = ({ name, size = 'md', tint }: { name: string; size?: 'sm' | 'md' | 'lg'; tint?: string }) => (

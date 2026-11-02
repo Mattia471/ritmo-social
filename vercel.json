@@ -1,0 +1,1 @@
+{"rewrites":[{"source":"/((?!assets/|icon-|favicon|logo-|og-|manifest|robots|sitemap).*)","destination":"/index.html"}]}

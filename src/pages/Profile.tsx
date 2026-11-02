@@ -2,11 +2,13 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarDays, Check, HeartHandshake, LogOut, RotateCcw, UserX, Settings2, ShieldCheck, Bell } from 'lucide-react';
 import { useStore } from '../lib/store';
+import { useNotifications } from '../lib/notifications';
 import { Avatar, Pill } from '../components/Shared';
 import { CITY_AREAS, DANCE_CHOICES, type Dance } from '../types';
 
 export function Profile() {
   const { profile, events, attendances, blockedUsers, userId, updateProfile, unblockUser, signOut, isLive, restartDemo } = useStore();
+  const { disablePush } = useNotifications();
   const [name,setName] = useState(profile.name);
   const [city,setCity] = useState(profile.city);
   const [bio,setBio] = useState(profile.bio);
@@ -29,7 +31,7 @@ export function Profile() {
     <Link to="/create" className="profile-pro"><span className="pro-symbol"><HeartHandshake size={27}/></span><div><span className="eyebrow">LA PISTA È DI TUTTI</span><h3>Organizza gratis</h3><p>Pubblica serate e invita nuovi ballerini. Nessun abbonamento.</p></div><ArrowRight size={22}/></Link>
     <div className="profile-links"><Link to="/notifications"><Bell size={19}/> Notifiche e preferenze <ArrowRight size={18}/></Link><Link to="/my-events"><CalendarDays size={19}/> I miei eventi <ArrowRight size={18}/></Link><Link to="/chats"><HeartHandshake size={19}/> Community e chat <ArrowRight size={18}/></Link><Link to="/chats"><ShieldCheck size={19}/> Segnala un messaggio dalla chat <ArrowRight size={17}/></Link></div>
     {isLive && <section className="profile-blocked" aria-labelledby="blocked-members-heading"><h3 id="blocked-members-heading"><UserX size={19}/> Persone bloccate <span>{blockedUsers.length}</span></h3><p>I loro messaggi restano nascosti nelle chat. Il blocco non impedisce di partecipare alla stessa serata.</p>{blockError && <p className="form-error" role="alert">{blockError}</p>}{blockedUsers.length ? <ul>{blockedUsers.map(block => <li key={block.id}><span>{block.name}</span><button type="button" disabled={unblockBusy !== null} onClick={() => { setBlockError(''); setUnblockBusy(block.id); void unblockUser(block.id).catch(err => setBlockError(err instanceof Error ? err.message : 'Impossibile sbloccare.')).finally(() => setUnblockBusy(null)); }}>{unblockBusy === block.id ? 'Sblocco...' : 'Sblocca'}</button></li>)}</ul> : <p className="profile-blocked-empty">Non hai bloccato nessuno.</p>}</section>}
-    <div className="profile-session"><Pill tone={isLive ? 'lime' : 'orange'}>{isLive ? 'Connesso a Supabase' : 'Modalità demo locale'}</Pill>{isLive ? <button onClick={() => void signOut()}><LogOut size={17}/> Esci dall'account</button> : <button onClick={() => setConfirmReset(true)}><RotateCcw size={17}/> Ripristina la demo</button>}</div>
+    <div className="profile-session"><Pill tone={isLive ? 'lime' : 'orange'}>{isLive ? 'Connesso a Supabase' : 'Modalità demo locale'}</Pill>{isLive ? <button onClick={() => { void (async () => { try { await disablePush(); } catch { /* Sign-out must still succeed if browser permissions changed. */ } await signOut(); })(); }}><LogOut size={17}/> Esci dall'account</button> : <button onClick={() => setConfirmReset(true)}><RotateCcw size={17}/> Ripristina la demo</button>}</div>
     {confirmReset && !isLive && <div className="reset-inline"><p>Ripristinare tutti gli eventi, i messaggi e le richieste di questa demo?</p><button onClick={() => setConfirmReset(false)} className="btn btn-outline">Annulla</button><button onClick={() => { restartDemo(); setEditing(false); setConfirmReset(false); }} className="btn btn-primary">Conferma ripristino</button></div>}
   </div>;
 }

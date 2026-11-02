@@ -48,7 +48,24 @@ export function CreateEvent() {
         <label className="form-label" htmlFor="event-desc">Descrizione</label><textarea id="event-desc" className="form-input form-textarea" maxLength={2000} rows={4} placeholder="Cosa aspetta i partecipanti? Atmosfera, dress code, musica..." value={description} onChange={e => setDescription(e.target.value)}/>
         <label className="form-label">Quali ritmi si ballano? *</label><div className="choice-tags">{danceChoices.map(d => <button type="button" key={d} className={`choice-tag ${dances.includes(d) ? 'active' : ''}`} onClick={() => toggleDance(d)}>{dances.includes(d) && <Check size={15}/>} {d}</button>)}</div>
       </section>
-      <section className="form-section"><div className="form-section-title"><span className="form-index">02</span><div><h2>Quando ci si vede?</h2><p>Indica giorno e orario</p></div><CalendarDays size={20}/></div><div className="form-row"><div><label className="form-label" htmlFor="start-date">Inizio *</label><input id="start-date" className="form-input" type="datetime-local" required value={startsAt} onChange={e => setStartsAt(e.target.value)}/></div><div><label className="form-label" htmlFor="end-date">Fine *</label><input id="end-date" className="form-input" type="datetime-local" required value={endsAt} onChange={e => setEndsAt(e.target.value)}/></div></div></section>
+      <section className="form-section"><div className="form-section-title"><span className="form-index">02</span><div><h2>Quando ci si vede?</h2><p>Imposta data e ora di inizio e fine</p></div><CalendarDays size={20}/></div>
+        <div className="event-date-pair">
+          <div className="event-date-group">
+            <h3 className="event-date-heading">Inizio serata</h3>
+            <div className="event-date-fields">
+              <div className="event-date-field"><label className="form-label" htmlFor="start-date">Data *</label><input id="start-date" className="form-input event-date-control" type="date" lang="it-IT" required value={startsAt.slice(0,10)} onChange={e => setStartsAt(`${e.target.value}T${startsAt.slice(11,16) || '21:00'}`)}/></div>
+              <div className="event-date-field"><label className="form-label" htmlFor="start-time">Ora *</label><input id="start-time" className="form-input event-date-control" type="time" lang="it-IT" required step="60" value={startsAt.slice(11,16)} onChange={e => setStartsAt(`${startsAt.slice(0,10)}T${e.target.value}`)}/></div>
+            </div>
+          </div>
+          <div className="event-date-group">
+            <h3 className="event-date-heading">Fine serata</h3>
+            <div className="event-date-fields">
+              <div className="event-date-field"><label className="form-label" htmlFor="end-date">Data *</label><input id="end-date" className="form-input event-date-control" type="date" lang="it-IT" required value={endsAt.slice(0,10)} onChange={e => setEndsAt(`${e.target.value}T${endsAt.slice(11,16) || '01:00'}`)}/></div>
+              <div className="event-date-field"><label className="form-label" htmlFor="end-time">Ora *</label><input id="end-time" className="form-input event-date-control" type="time" lang="it-IT" required step="60" value={endsAt.slice(11,16)} onChange={e => setEndsAt(`${endsAt.slice(0,10)}T${e.target.value}`)}/></div>
+            </div>
+          </div>
+        </div>
+      </section>
       <section className="form-section"><div className="form-section-title"><span className="form-index">03</span><div><h2>Dove si balla?</h2><p>La privacy prima di tutto</p></div><MapPin size={20}/></div>
         <div className="form-row"><div><label className="form-label" htmlFor="event-city">Città *</label><select className="form-input" id="event-city" value={city} onChange={e => { setCity(e.target.value); setArea(CITY_AREAS[e.target.value][0].name); }}>{Object.keys(CITY_AREAS).map(c => <option key={c}>{c}</option>)}</select></div><div><label className="form-label" htmlFor="event-area">Zona visibile *</label><select className="form-input" id="event-area" value={area} onChange={e => setArea(e.target.value)}>{CITY_AREAS[city].map(a => <option key={a.name}>{a.name}</option>)}</select></div></div>
         <label className="form-label" htmlFor="event-address">Indirizzo esatto (riservato) *</label><input id="event-address" className="form-input" value={address} onChange={e => setAddress(e.target.value)} required placeholder="Via, civico e città" maxLength={250}/>

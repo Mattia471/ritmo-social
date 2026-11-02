@@ -112,3 +112,64 @@ h1,h2,h3{letter-spacing:-.6px} h1 em,h2 em{color:#ff9ab6}
     pointer-events: none;
   }
 }
+
+
+/* B05-F08 | Prevent native iOS date/time controls from escaping their card.
+   Separate date/time pickers avoid datetime-local's oversized intrinsic width. */
+.create-form .event-date-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+.create-form .event-date-group,
+.create-form .event-date-fields,
+.create-form .event-date-field {
+  min-width: 0;
+  max-width: 100%;
+}
+.create-form .event-date-heading {
+  font-size: 14px;
+  font-weight: 750;
+  color: #ff8cac;
+  margin: 4px 0 8px;
+}
+.create-form .event-date-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.create-form input.event-date-control {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+  font-size: 16px;
+  line-height: 1.35;
+  padding: 12px 10px;
+  color-scheme: dark;
+}
+.create-form input.event-date-control::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+.create-form input.event-date-control::-webkit-datetime-edit { min-width: 0; }
+@media (max-width: 680px) {
+  .create-form .event-date-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .create-form .event-date-group {
+    width: 100%;
+    border: 1px solid #3c3354;
+    border-radius: 12px;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+  .create-form .event-date-group .form-label { margin-top: 8px; }
+}

@@ -166,9 +166,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
     const raw = subscription.toJSON();
     if (!raw.keys?.auth || !raw.keys.p256dh) throw new Error('Impossibile leggere la registrazione push dal dispositivo.');
-    const { error: insertError } = await client.from('push_subscriptions')
-      .upsert({ user_id: userId, endpoint: subscription.endpoint, p256dh: raw.keys.p256dh, auth: raw.keys.auth }, { onConflict: 'endpoint' });
-    if (insertError) throw new Error(insertError.message);
+    const { data: existing, error: lookupError } = await client.from('push_subscriptions')
+      .select('id').eq('user_id', userId).eq('endpoint', subscription.endpoint).maybeSingle();
+    if (lookupError) throw new Error(lookupError.message);
+    if (!existing) {
+      const { error: insertError } = await client.from('push_subscriptions')
+        .insert({ user_id: userId, endpoint: subscription.endpoint, p256dh: raw.keys.p256dh, auth: raw.keys.auth });
+      if (insertError) throw new Error(insertError.message);
+    }
     const { error: enabledError } = await client.from('notification_preferences')
       .update({ push_enabled: true }).eq('user_id', userId);
     if (enabledError) throw new Error(enabledError.message);

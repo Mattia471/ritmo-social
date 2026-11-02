@@ -27,7 +27,7 @@ export function Chats() {
   const stickToBottom = useRef(true);
   const endRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const memberships = events.filter(e => e.hostId === userId || attendances.some(a => a.eventId === e.id && a.userId === userId && a.status === 'approved'));
+  const memberships = events.filter(e => e.status !== 'canceled' && (e.hostId === userId || attendances.some(a => a.eventId === e.id && a.userId === userId && a.status === 'approved')));
   const isGlobal = !roomId || roomId === 'global';
   const selectedEvent = events.find(e => e.id === roomId);
   const canRead = isGlobal || memberships.some(e => e.id === roomId);
@@ -206,7 +206,7 @@ export function Chats() {
           })}{!visibleMessages.length && <div className="no-messages">Nessun messaggio ancora. Rompi il ghiaccio! 👋</div>}<div ref={endRef}/></div>
         {hasNewMessages && <button type="button" className="chat-new-messages" onClick={jumpToLatest}>Nuovi messaggi ↓</button>}
         {chatError && <p className="chat-error" role="alert">{chatError}</p>}
-        <form className="chat-compose" onSubmit={e => void submit(e)}><input aria-label="Scrivi un messaggio" onFocus={jumpToLatest} value={draft} disabled={sending} maxLength={1200} onChange={e => setDraft(e.target.value)} placeholder="Scrivi un messaggio alla community..."/><button type="submit" disabled={!draft.trim() || sending} aria-label="Invia messaggio"><Send size={19}/></button></form></> : <div className="locked-chat"><span className="locked-chat-icon"><LockKeyhole size={27}/></span><h3>Questa chat è riservata</h3><p>Solo i partecipanti confermati e l'organizzatore possono leggere e scrivere qui.</p><Link to={`/event/${roomId}`} className="btn btn-primary">Vai all'evento <ArrowUpRight size={18}/></Link><button onClick={() => navigate('/chats')} className="back-global"><ArrowLeft size={16}/> Torna alla chat globale</button></div>}</section>
+        <form className="chat-compose" onSubmit={e => void submit(e)}><input aria-label="Scrivi un messaggio" onFocus={jumpToLatest} value={draft} disabled={sending} maxLength={1200} onChange={e => setDraft(e.target.value)} placeholder="Scrivi un messaggio alla community..."/><button type="submit" disabled={!draft.trim() || sending} aria-label="Invia messaggio"><Send size={19}/></button></form></> : <div className="locked-chat"><span className="locked-chat-icon"><LockKeyhole size={27}/></span><h3>Questa chat è riservata</h3><p>Solo i partecipanti confermati e l'organizzatore possono usare una chat relativa a una serata ancora attiva.</p><Link to={`/event/${roomId}`} className="btn btn-primary">Vai all'evento <ArrowUpRight size={18}/></Link><button onClick={() => navigate('/chats')} className="back-global"><ArrowLeft size={16}/> Torna alla chat globale</button></div>}</section>
     </div><div className="community-guidelines"><Users size={17}/> <span><strong>Qui siamo tutti della stessa squadra.</strong> Niente spam, molestie o condivisione di indirizzi privati. Puoi segnalare i messaggi dalla conversazione. Puoi segnalare o bloccare un utente; le segnalazioni vengono esaminate manualmente.</span></div>
   </div>;
 }

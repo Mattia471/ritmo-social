@@ -36,3 +36,9 @@ test('chat surfaces failures and lets the user refresh or retry messages', () =>
   assert.match(chat, /title="Aggiorna conversazione"/);
   assert.match(chat, /hasNewMessages/);
 });
+
+test('signing out clears personal profile and messages from browser state', () => {
+  const store = read('src/lib/store.tsx');
+  assert.match(store, /Never show the previous account\'s profile after logout/);
+  assert.match(store, /setData\(s => \(\{ \.\.\.s, \.\.\.emptyLiveChats\(\) \}\)\)/);
+});

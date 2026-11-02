@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, Globe2, Hash, LockKeyhole, Flag, MessageCircle, RefreshCw, Send, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Globe2, Hash, LockKeyhole, Flag, UserX, MessageCircle, RefreshCw, Send, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { Avatar } from '../components/Shared';
 import { useStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
@@ -10,7 +10,7 @@ import '../chat-sync.css';
 export function Chats() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { events, attendances, messages, userId, sendMessage, reportMessage, loadChatMessages } = useStore();
+  const { events, attendances, messages, blockedUsers, userId, sendMessage, reportMessage, loadChatMessages, blockUser } = useStore();
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState('');
@@ -20,6 +20,8 @@ export function Chats() {
   const [reportBusy, setReportBusy] = useState(false);
   const [reportError, setReportError] = useState('');
   const [reportDone, setReportDone] = useState<string | null>(null);
+  const [blockCandidate, setBlockCandidate] = useState<{ id: string; name: string; messageId: string } | null>(null);
+  const [blockBusy, setBlockBusy] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'connecting' | 'live' | 'offline' | 'demo'>(supabase ? 'connecting' : 'demo');
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const stickToBottom = useRef(true);
@@ -30,7 +32,7 @@ export function Chats() {
   const selectedEvent = events.find(e => e.id === roomId);
   const canRead = isGlobal || memberships.some(e => e.id === roomId);
   const channel = isGlobal ? null : roomId || null;
-  const visibleMessages = useMemo(() => messages.filter(m => m.eventId === channel), [messages, channel]);
+  const visibleMessages = useMemo(() => messages.filter(m => m.eventId === channel && !blockedUsers.some(block => block.id === m.userId)), [messages, channel, blockedUsers]);
   // iOS Safari changes the visual viewport when the software keyboard opens.
   // Use the actual visible height instead of trying to scroll the entire page.
   useEffect(() => {
@@ -99,6 +101,7 @@ export function Chats() {
     };
   }, [channel, canRead, loadChatMessages, userId]);
   useEffect(() => {
+    setBlockCandidate(null);
     setReportMessageId(null);
     setReportDone(null);
     setReportError('');
@@ -142,6 +145,14 @@ export function Chats() {
       setChatError(err instanceof Error ? err.message : 'Invio non riuscito. Riprova.');
     } finally { setSending(false); }
   };
+  const confirmBlock = async () => {
+    if (!blockCandidate || blockBusy) return;
+    setBlockBusy(true);
+    setChatError('');
+    try { await blockUser(blockCandidate.id); setBlockCandidate(null); }
+    catch (err) { setChatError(err instanceof Error ? err.message : 'Impossibile bloccare questo account.'); }
+    finally { setBlockBusy(false); }
+  };
   const sendReport = async (e: FormEvent<HTMLFormElement>, messageId: string) => {
     e.preventDefault();
     if (reportBusy) return;
@@ -173,6 +184,8 @@ export function Chats() {
               {!mine && supabase && <div className="chat-report-control">{reportDone === msg.id
                 ? <span role="status" className="chat-report-success">Segnalazione registrata</span>
                 : <button type="button" className="chat-report-link" aria-label={`Segnala il messaggio di ${msg.userName}`} onClick={() => { setReportMessageId(v => v === msg.id ? null : msg.id); setReportReason('spam'); setReportNote(''); setReportError(''); }}><Flag size={12}/> Segnala</button>}
+              <button type="button" className="chat-report-link chat-block-link" aria-label={`Nascondi i messaggi di ${msg.userName}`} onClick={() => { setBlockCandidate({ id: msg.userId, name: msg.userName, messageId: msg.id }); setReportMessageId(null); }}><UserX size={12}/> Blocca utente</button>
+              {blockCandidate?.messageId === msg.id && <div className="chat-block-confirm" role="group" aria-label="Conferma blocco utente"><strong>Nascondere i messaggi di {msg.userName}?</strong><p>Non vedrai più i suoi messaggi. Potreste comunque partecipare alla stessa serata.</p><div className="chat-report-actions"><button type="button" disabled={blockBusy} onClick={() => void confirmBlock()}>{blockBusy ? 'Blocco...' : 'Conferma blocco'}</button><button type="button" disabled={blockBusy} onClick={() => setBlockCandidate(null)}>Annulla</button></div></div>}
               {reportMessageId === msg.id && <form className="chat-report-form" onSubmit={e => void sendReport(e, msg.id)} aria-label="Segnala messaggio">
                 <label>Perché vuoi segnalare questo messaggio?
                   <select className="form-input" required value={reportReason} onChange={e => setReportReason(e.target.value as typeof reportReason)}>
@@ -194,6 +207,6 @@ export function Chats() {
         {hasNewMessages && <button type="button" className="chat-new-messages" onClick={jumpToLatest}>Nuovi messaggi ↓</button>}
         {chatError && <p className="chat-error" role="alert">{chatError}</p>}
         <form className="chat-compose" onSubmit={e => void submit(e)}><input aria-label="Scrivi un messaggio" onFocus={jumpToLatest} value={draft} disabled={sending} maxLength={1200} onChange={e => setDraft(e.target.value)} placeholder="Scrivi un messaggio alla community..."/><button type="submit" disabled={!draft.trim() || sending} aria-label="Invia messaggio"><Send size={19}/></button></form></> : <div className="locked-chat"><span className="locked-chat-icon"><LockKeyhole size={27}/></span><h3>Questa chat è riservata</h3><p>Solo i partecipanti confermati e l'organizzatore possono leggere e scrivere qui.</p><Link to={`/event/${roomId}`} className="btn btn-primary">Vai all'evento <ArrowUpRight size={18}/></Link><button onClick={() => navigate('/chats')} className="back-global"><ArrowLeft size={16}/> Torna alla chat globale</button></div>}</section>
-    </div><div className="community-guidelines"><Users size={17}/> <span><strong>Qui siamo tutti della stessa squadra.</strong> Niente spam, molestie o condivisione di indirizzi privati. Puoi segnalare i messaggi dalla conversazione. Il blocco utenti e la gestione completa della moderazione arriveranno prima del lancio pubblico.</span></div>
+    </div><div className="community-guidelines"><Users size={17}/> <span><strong>Qui siamo tutti della stessa squadra.</strong> Niente spam, molestie o condivisione di indirizzi privati. Puoi segnalare i messaggi dalla conversazione. Puoi segnalare o bloccare un utente; le segnalazioni vengono esaminate manualmente.</span></div>
   </div>;
 }

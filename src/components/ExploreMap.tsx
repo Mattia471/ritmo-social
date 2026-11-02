@@ -43,20 +43,34 @@ function EventMarkers({ events, zoom, activeIds, onSelect }: {
   onSelect: (events: SpotEvent[]) => void;
 }) {
   const map = useMap();
+  const [revision, setRevision] = useState(0);
+  useMapEvents({ moveend: () => setRevision(r => r + 1) });
   const groups = useMemo<MarkerGroup[]>(() => {
-    // View-dependent light clustering; exact same public zones always share one pin.
-    const unit = zoom <= 10 ? .029 : zoom <= 12 ? .011 : zoom <= 14 ? .004 : .0001;
-    const buckets = new Map<string, SpotEvent[]>();
-    for (const event of events) {
-      const key = `${Math.round(event.publicLat / unit)}:${Math.round(event.publicLng / unit)}`;
-      buckets.set(key, [...(buckets.get(key) ?? []), event]);
+    // Cluster markers using *screen pixel distance*, not coarse latitude rounding.
+    // Even events in the same public zone can be selected individually in the list.
+    const points = events.map(event => map.latLngToContainerPoint([event.publicLat, event.publicLng]));
+    const parent = events.map((_, i) => i);
+    const root = (i: number): number => parent[i] === i ? i : root(parent[i]);
+    for (let i = 0; i < points.length; i++) {
+      for (let j = i + 1; j < points.length; j++) {
+        if (points[i].distanceTo(points[j]) < 58) parent[root(j)] = root(i);
+      }
     }
-    return [...buckets].map(([key, grouped]) => ({
-      key,
+    const buckets = new Map<number, SpotEvent[]>();
+    events.forEach((event, i) => {
+      const id = root(i);
+      buckets.set(id, [...(buckets.get(id) ?? []), event]);
+    });
+    return [...buckets].map(([id, grouped]) => ({
+      key: String(id) + ':' + grouped.map(event => event.id).join(','),
       events: grouped,
-      center: [grouped.reduce((s, e) => s + e.publicLat, 0) / grouped.length, grouped.reduce((s, e) => s + e.publicLng, 0) / grouped.length],
+      center: [
+        grouped.reduce((sum, event) => sum + event.publicLat, 0) / grouped.length,
+        grouped.reduce((sum, event) => sum + event.publicLng, 0) / grouped.length,
+      ],
     }));
-  }, [events, zoom]);
+  // Recalculate only after map movement ends; no rerender storm during pan.
+  }, [events, zoom, revision, map]);
 
   return <>{groups.map(group => {
     const { events: grouped, key, center } = group;
@@ -72,7 +86,7 @@ function EventMarkers({ events, zoom, activeIds, onSelect }: {
     return <Marker key={key} icon={pin} position={center} keyboard title={cluster ? `${grouped.length} eventi in questa zona` : `${first.title}, ${first.area}`} eventHandlers={{
       click: () => {
         onSelect(grouped);
-        if (cluster && zoom < 14) map.flyTo(center, Math.min(14, zoom + 2), { duration: .4 });
+        if (cluster && zoom < 14) map.flyTo(center, Math.min(15, zoom + 2), { duration: .4 });
       },
     }}>
     </Marker>;
@@ -101,8 +115,8 @@ export function ExploreMap({ events, location, radius }: { events: SpotEvent[]; 
       </MapContainer>
       {!events.length && <div className="map-empty-note">Nessuna serata in questo raggio. Prova a cambiare città o ad allargare la ricerca.</div>}
       {selected.length > 0 && <div className="map-selection" role="region" aria-label="Serate selezionate dalla mappa">
-        <div className="map-selection-heading"><span>{selected.length > 1 ? `${selected.length} serate in questa zona` : '✦ Hai trovato una serata'}</span><button aria-label="Chiudi anteprima evento" onClick={() => setSelectedIds([])}><X size={16}/></button></div>
-        <div className="map-selection-content">{selected.map(event => <Link to={`/event/${event.id}`} key={event.id} className="map-preview-event" aria-label={`Apri ${event.title}`}>
+        <div className="map-selection-heading"><span>{selected.length > 1 ? `${selected.length} serate qui · scegli dall'elenco` : '✦ Hai trovato una serata'}</span><button aria-label="Chiudi anteprima evento" onClick={() => setSelectedIds([])}><X size={16}/></button></div>
+        <div className="map-selection-content" tabIndex={0} aria-label="Scorri le serate della zona">{selected.map(event => <Link to={`/event/${event.id}`} key={event.id} className="map-preview-event" aria-label={`Apri ${event.title}`}>
           <img className="map-preview-cover" src={event.cover} alt="" loading="lazy"/>
           <span className="map-preview-copy"><strong>{event.title}</strong><small><MapPin size={11}/> {event.area}, {event.city} · zona indicativa</small><small><CalendarDays size={11}/>{tinyDate(event.startsAt)} · {clock(event.startsAt)} <span className="map-preview-price">{event.price ? `€${event.price}` : 'Gratis'}</span></small></span>
           <ArrowUpRight className="arrow" size={21}/>

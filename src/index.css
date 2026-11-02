@@ -244,3 +244,108 @@ h1,h2,h3{letter-spacing:-.6px} h1 em,h2 em{color:#ff9ab6}
   .chat-mobile-conversation .message-row{max-width:90%}
   .detail-back{display:none}
 }
+
+/* Ritmo Social v0.4 | Four-stage event wizard */
+.create-wizard .wizard-intro {margin-bottom:20px}
+.create-wizard .create-grid{align-items:start}
+.create-wizard .create-form{scroll-margin-top:18px}
+.wizard-steps{background:linear-gradient(135deg,#261d42,#211a38);border:1px solid #513963;border-radius:16px;padding:18px 20px;margin-bottom:14px}
+.wizard-count{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#c6b8da;font-size:12px;font-weight:700}
+.wizard-count strong{color:#fff;font-size:13px}
+.wizard-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:13px}
+.wizard-progress span{height:6px;border-radius:999px;background:#403252}
+.wizard-progress span.on{background:linear-gradient(90deg,#ff779e,#bb7fff)}
+.wizard-steps>p{font-size:12px;color:#c4b7d3;margin:12px 0 0}
+.create-wizard .wizard-section{background:#1e1a2f;border-color:#463854}
+.create-wizard .form-index{background:#352445;color:#ff95b5;border-color:#694268}
+.create-wizard .form-section-title{margin-bottom:15px}
+.create-wizard .form-input{background:#2a233c;border:1px solid #5c4769}
+.create-wizard .form-input:focus{border-color:#f886ab;box-shadow:0 0 0 3px #ff719623}
+.create-wizard .choice-tag.active{background:#4c294f;color:#ffb3ca;border-color:#f985ab}
+.create-wizard .privacy-field{background:#2b2441;border:1px solid #6d4b72}
+.create-wizard .privacy-field svg,.create-wizard .privacy-field strong{color:#ffafc3}
+.wizard-hint{display:flex;align-items:center;gap:8px;font-size:12px;color:#bdb2ce;margin:0}
+.wizard-navigation{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-top:10px;background:#1e1a2df0;border:1px solid #4d3c60;border-radius:16px;padding:10px;backdrop-filter:blur(12px)}
+.wizard-navigation button{min-width:0;white-space:nowrap;padding:14px 8px;font-size:13px}
+.wizard-navigation button svg{flex-shrink:0}
+.wizard-review-image{background-size:cover;background-position:center;min-height:225px;border-radius:15px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:18px;margin-bottom:16px}
+.wizard-review-image h3{font-size:clamp(22px,4vw,30px);line-height:1.2;margin:0;word-break:break-word}
+.wizard-summary{display:grid;gap:12px;margin-bottom:16px}
+.wizard-summary p{display:flex;align-items:flex-start;gap:11px;color:#e4dbea;font-size:13px;line-height:1.5;background:#29233b;border-radius:12px;padding:12px;margin:0;min-width:0}
+.wizard-summary p svg{color:#ff96b3;flex-shrink:0}
+.wizard-summary p span{display:flex;flex-direction:column;gap:3px;min-width:0}
+.wizard-summary strong{font-size:11px;color:#a99dbf}
+.wizard-private{display:flex;align-items:flex-start;gap:11px;border:1px solid #a3637d;background:#392439;padding:15px;border-radius:12px}
+.wizard-private>svg{color:#ff9ebc;flex-shrink:0}
+.wizard-private>div{display:flex;flex-direction:column;gap:6px;min-width:0}
+.wizard-private strong{color:#ffd3e0;font-size:12px}
+.wizard-private span{color:#e9dfe8;font-size:12px;overflow-wrap:anywhere;line-height:1.5}
+.wizard-edit-link{display:inline-flex;align-items:center;gap:8px;border:0;background:none;color:#ff9cba;font-size:12px;font-weight:800;padding:14px 0 0}
+@media(max-width:680px){
+  .create-wizard .wizard-intro h1{font-size:30px}
+  .create-wizard .wizard-intro>p:last-child{font-size:12px;line-height:1.5}
+  .wizard-steps{padding:15px;border-radius:14px}
+  .wizard-navigation{position:sticky;bottom:calc(83px + env(safe-area-inset-bottom));z-index:40;box-shadow:0 6px 32px #08061077}
+  .app-shell:has(.create-wizard :is(input,select,textarea):focus) .wizard-navigation{position:static}
+  .create-wizard .form-section{padding:16px 14px}
+  .create-wizard .event-date-pair{grid-template-columns:minmax(0,1fr)}
+  .create-wizard .event-date-group{min-width:0;width:100%}
+  .create-wizard .event-date-control{font-size:16px!important;min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+  .create-wizard .form-row{grid-template-columns:minmax(0,1fr)}
+  .create-wizard .create-aside{padding-top:12px}
+  .wizard-navigation button{font-size:12px}
+}
+
+/* Map improvements: more room for the map, compact selection card and clusters. */
+.event-pin-shell.cluster{z-index:4;filter:drop-shadow(0 4px 6px #1c153f88)}
+.event-pin-shell.cluster .event-pin{background:#fff1c9;border:3px solid #a572f4;color:#342046;box-shadow:0 0 0 5px #2b1b5577}
+.event-pin-shell.cluster .pin-symbol{font-weight:950}
+.map-selection{bottom:36px}
+.map-selection-heading{font-size:11px;padding:8px 11px}
+.map-selection-content{max-height:174px}
+.map-preview-event{min-height:60px}
+.map-selection-content:focus-visible{outline:2px solid #ff98b7;outline-offset:-2px}
+@media(max-width:680px){
+  .map-selection{left:8px;right:8px;bottom:24px}
+  .map-selection-heading{font-size:10px;padding:7px 10px 5px}
+  .map-selection-content{max-height:136px;padding:0 6px 7px}
+  .map-preview-event{gap:8px;padding:7px;min-height:62px}
+  .map-preview-cover{width:52px;height:52px}
+  .map-preview-copy small{font-size:10px;line-height:1.25}
+  .map-preview-event .arrow{width:18px}
+  .explore-map{height:min(62dvh,540px);min-height:385px}
+}
+
+/* Mobile event CTA remains accessible while browsing event details. */
+.detail-mobile-action{display:none}
+@media(max-width:680px){
+  .detail-page{padding-bottom:86px}
+  .detail-mobile-action{position:fixed;display:flex;align-items:center;gap:12px;justify-content:space-between;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:1700;background:#201932f5;border:1px solid #745384;border-radius:16px;padding:10px 12px;box-shadow:0 9px 29px #080516ab;backdrop-filter:blur(12px)}
+  .detail-mobile-action-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .detail-mobile-action-copy strong{font-size:16px;color:#ffd3df}
+  .detail-mobile-action-copy span{font-size:10px;color:#d3c3df;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .detail-mobile-action .btn{flex-shrink:0;padding:13px 14px;font-size:12px}
+  #event-booking{scroll-margin-top:85px}
+  .detail-cover{height:205px}
+}
+
+/* Safari keyboard: use VisualViewport measurements to position one fixed app pane.
+   No global keyboard scrolling, one conversation header, only messages scroll. */
+@media(max-width:680px){
+  .app-shell:has(.chat-mobile-conversation){height:var(--ritmo-chat-height,100dvh);min-height:0;overflow:hidden}
+  .app-shell:has(.chat-mobile-conversation) .main-area{position:fixed;left:0;right:0;top:var(--ritmo-chat-top,0px);height:var(--ritmo-chat-height,100dvh);min-height:0;overflow:hidden;display:flex;flex-direction:column}
+  .app-shell:has(.chat-mobile-conversation) .topbar{display:none}
+  .app-shell:has(.chat-mobile-conversation) .chat-page-main{height:100%;flex:1;overflow:hidden;min-height:0;padding:0!important}
+  .chat-mobile-conversation .chat-layout{height:100%;min-height:0;overflow:hidden}
+  .chat-mobile-conversation .chat-conversation{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden}
+  .chat-mobile-conversation .conversation-heading{flex:0 0 auto;min-height:64px;padding:10px 12px;background:#211b38;z-index:2}
+  .chat-mobile-conversation .conversation-heading>span:nth-child(3){display:flex;flex-direction:column;flex:1;min-width:0;gap:3px}
+  .chat-mobile-conversation .live-presence{display:none}
+  .chat-mobile-conversation .message-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+  .chat-mobile-conversation .chat-compose{flex:0 0 auto;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#211b38}
+  .ritmo-chat-keyboard .chat-mobile-conversation .chat-compose{padding-bottom:8px}
+  .chat-mobile-conversation .conversation-welcome{padding:8px 0;margin-bottom:8px}
+  .chat-mobile-conversation .conversation-welcome h3{font-size:14px;margin-bottom:6px}
+  .chat-mobile-conversation .conversation-welcome p{font-size:11px;line-height:1.5}
+  .chat-mobile-conversation .no-messages{font-size:12px}
+}

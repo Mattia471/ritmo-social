@@ -31,7 +31,7 @@ export function Home() {
       <div><strong>Vuoi sapere quando arriva una serata vicino a te?</strong><p>Attiva gli avvisi su Ritmo Social. Su iPhone trovi anche i passaggi per installare l'app.</p></div>
       <Link to="/notifications" className="home-push-hint-action">Attiva <ArrowUpRight size={16}/></Link>
       <button type="button" aria-label="Non mostrare più questo avviso" className="home-push-hint-dismiss" onClick={() => { setDismissedPushHint(true); try { localStorage.setItem('ritmo-push-hint-hidden', '1'); } catch { /* Dismiss for this view only */ } }}><X size={16}/></button>
-    </section>
+    </section>}
     <form className="quick-search" onSubmit={e => { e.preventDefault(); navigate(`/explore?q=${encodeURIComponent(query)}`); }}><Search size={21}/><input aria-label="Cerca eventi, generi o zone" placeholder="Cerca eventi, locali, stili di danza..." value={query} onChange={e => setQuery(e.target.value)}/><button type="submit" aria-label="Cerca"><ArrowRight size={19}/></button></form>
     <div className="location-line"><span><MapPin size={16}/> Serate vicino a <strong>{location.name}</strong> <span className="location-radius">· {radius} km</span></span><Link to="/explore">Mappa <ArrowUpRight size={14}/></Link></div>
     <section className="hero-section" aria-label={spotlight ? `Evento in evidenza: ${spotlight.title}` : 'Scopri Ritmo Social'}>

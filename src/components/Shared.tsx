@@ -24,18 +24,18 @@ export function EventCard({ event, distance, horizontal = false }: { event: Spot
   const { attendances, userId } = useStore();
   const attendance = attendances.find(a => a.eventId === event.id && a.userId === userId);
   const own = event.hostId === userId;
-  return <Link to={`/event/${event.id}`} className={`event-card ${horizontal ? 'event-card-featured' : ''}`}>
+  return <Link to={`/event/${event.id}`} className={`event-card ${horizontal ? 'event-card-featured' : ''} ${event.status === 'canceled' ? 'event-card-canceled' : ''}`}>
     <div className="event-photo" style={{ backgroundImage: `linear-gradient(180deg, rgba(7,7,11,.04), rgba(7,7,11,.58)), url("${event.cover}")` }}>
       <div className="photo-top"><span className="date-square"><strong>{new Date(event.startsAt).getDate()}</strong><small>{new Intl.DateTimeFormat('it-IT', { month: 'short' }).format(new Date(event.startsAt)).replace('.', '').toUpperCase()}</small></span>
-        {event.featured && <span className="photo-feature">✦ IN EVIDENZA</span>}
+        {event.status === 'canceled' ? <span className="photo-feature">SERATA ANNULLATA</span> : event.featured && <span className="photo-feature">✦ IN EVIDENZA</span>}
       </div>
       <div className="photo-bottom"><span className="photo-tag">{event.dances.join(' · ')}</span><span className="photo-price">{event.price === 0 ? 'FREE' : `€${event.price}`}</span></div>
     </div>
     <div className="event-info"><div className="event-line"><h3>{event.title}</h3><ArrowUpRight className="card-arrow" size={18}/></div>
       <p className="event-subline"><MapPin size={14}/>{event.area}, {event.city}{distance !== undefined && <><span className="tiny-dot"/>~{distance.toFixed(1)} km</>}</p>
       <div className="event-footer"><span><CalendarDays size={14}/>{tinyDate(event.startsAt)} · {clock(event.startsAt)}</span><span><Users size={14}/>{event.approvedCount} iscritti</span></div>
-      {(attendance || own) && <span className={`event-status ${own ? 'status-own' : attendance?.status === 'approved' ? 'status-approved' : attendance?.status === 'pending' ? 'status-pending' : 'status-rejected'}`}>
-        {own ? 'Organizzi tu' : attendance?.status === 'approved' ? '✓ Confermato' : attendance?.status === 'pending' ? '⌛ In attesa' : 'Richiesta rifiutata'}</span>}
+      {(attendance || own || event.status === 'canceled') && <span className={`event-status ${event.status === 'canceled' ? 'status-rejected' : own ? 'status-own' : attendance?.status === 'approved' ? 'status-approved' : attendance?.status === 'pending' ? 'status-pending' : 'status-rejected'}`}>
+        {event.status === 'canceled' ? 'Serata annullata' : own ? 'Organizzi tu' : attendance?.status === 'approved' ? '✓ Confermato' : attendance?.status === 'pending' ? '⌛ In attesa' : 'Richiesta rifiutata'}</span>}
     </div>
   </Link>;
 }

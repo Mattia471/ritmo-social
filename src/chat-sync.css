@@ -6,3 +6,9 @@
 .chat-error{margin:0;padding:10px 16px;background:#482c32;color:#ffdadd;font-size:12px;line-height:1.5;border-top:1px solid #93505e}
 .chat-compose input:disabled{opacity:.72}
 @media(max-width:680px){.chat-mobile-conversation .chat-retry{width:33px;height:33px}.chat-mobile-conversation .chat-new-messages{margin-bottom:4px}.chat-mobile-conversation .chat-error{padding:8px 12px}}
+
+@media(max-width:680px){
+  /* Keep the actual connection-state dot visible in narrow iPhone headers. */
+  .chat-mobile-conversation .live-presence{display:flex;font-size:0;gap:0;flex:none}
+  .chat-mobile-conversation .live-presence span{width:9px;height:9px}
+}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowUpRight, Globe2, Hash, LockKeyhole, MessageCircle, RefreshCw, Send, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Globe2, Hash, LockKeyhole, Flag, MessageCircle, RefreshCw, Send, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { Avatar } from '../components/Shared';
 import { useStore } from '../lib/store';
 import { supabase } from '../lib/supabase';
@@ -10,10 +10,16 @@ import '../chat-sync.css';
 export function Chats() {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { events, attendances, messages, userId, sendMessage, loadChatMessages } = useStore();
+  const { events, attendances, messages, userId, sendMessage, reportMessage, loadChatMessages } = useStore();
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState('');
+  const [reportMessageId, setReportMessageId] = useState<string | null>(null);
+  const [reportReason, setReportReason] = useState<'spam' | 'harassment' | 'hate' | 'privacy' | 'other'>('spam');
+  const [reportNote, setReportNote] = useState('');
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const [reportDone, setReportDone] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<'connecting' | 'live' | 'offline' | 'demo'>(supabase ? 'connecting' : 'demo');
   const [hasNewMessages, setHasNewMessages] = useState(false);
   const stickToBottom = useRef(true);
@@ -93,6 +99,11 @@ export function Chats() {
     };
   }, [channel, canRead, loadChatMessages, userId]);
   useEffect(() => {
+    setReportMessageId(null);
+    setReportDone(null);
+    setReportError('');
+  }, [roomId]);
+  useEffect(() => {
     stickToBottom.current = true;
     setHasNewMessages(false);
   }, [roomId]);
@@ -131,6 +142,20 @@ export function Chats() {
       setChatError(err instanceof Error ? err.message : 'Invio non riuscito. Riprova.');
     } finally { setSending(false); }
   };
+  const sendReport = async (e: FormEvent<HTMLFormElement>, messageId: string) => {
+    e.preventDefault();
+    if (reportBusy) return;
+    setReportBusy(true);
+    setReportError('');
+    try {
+      await reportMessage(messageId, reportReason, reportNote);
+      setReportDone(messageId);
+      setReportMessageId(null);
+      setReportNote('');
+    } catch (err) {
+      setReportError(err instanceof Error ? err.message : 'Impossibile inviare la segnalazione.');
+    } finally { setReportBusy(false); }
+  };
   return <div className={`chats-page ${roomId ? 'chat-mobile-conversation' : 'chat-mobile-index'}`}>
     {!roomId && <section className="mobile-chat-index" aria-label="Elenco delle conversazioni"><div className="mobile-chat-index-title"><p className="eyebrow">LA COMMUNITY DEL BALLO</p><h1>Messaggi</h1><p>La pista inizia da una conversazione.</p></div><div className="mobile-chat-rooms"><Link to="/chats/global" className="mobile-chat-room"><span className="mobile-room-avatar global"><Globe2 size={23}/></span><span className="mobile-room-text"><strong>Chat globale</strong><small>Conosci nuovi ballerini e organizza uscite</small></span><ArrowUpRight size={19}/></Link>{memberships.map(event => <Link className="mobile-chat-room" key={event.id} to={`/chats/${event.id}`}><span className="mobile-room-avatar"><Hash size={23}/></span><span className="mobile-room-text"><strong>{event.title}</strong><small>{event.area}, {event.city} · Partecipazione confermata</small></span><ArrowUpRight size={19}/></Link>)}{!memberships.length && <div className="mobile-chat-zero"><LockKeyhole size={18}/> Le chat degli eventi appaiono dopo la conferma dell'organizzatore.</div>}</div><Link to="/explore" className="mobile-chat-explore">Scopri le prossime serate <ArrowUpRight size={17}/></Link></section>}
     <div className="page-intro chat-intro"><p className="eyebrow">NON SI BALLA MAI DA SOLI</p><h1>La <em>community.</em></h1><p>Parla, organizza, conosci persone. E poi tutti in pista.</p></div>
@@ -144,11 +169,31 @@ export function Chats() {
             const mine = msg.userId === userId;
             const previous = visibleMessages[i-1];
             const showAuthor = previous?.userId !== msg.userId || (new Date(msg.createdAt).getTime() - new Date(previous.createdAt).getTime() > 600000);
-            return <div className={`message-row ${mine ? 'mine' : ''}`} key={msg.id}>{!mine && <div className="message-avatar">{showAuthor ? <Avatar name={msg.userName} size="sm"/> : null}</div>}<div className="message-stack">{!mine && showAuthor && <span className="sender-name">{msg.userName}</span>}<div className={`message-bubble ${mine ? 'message-mine' : ''}`}><p>{msg.content}</p><time dateTime={msg.createdAt}>{tinyDate(msg.createdAt)} {clock(msg.createdAt)}</time></div></div></div>;
+            return <div className={`message-row ${mine ? 'mine' : ''}`} key={msg.id}>{!mine && <div className="message-avatar">{showAuthor ? <Avatar name={msg.userName} size="sm"/> : null}</div>}<div className="message-stack">{!mine && showAuthor && <span className="sender-name">{msg.userName}</span>}<div className={`message-bubble ${mine ? 'message-mine' : ''}`}><p>{msg.content}</p><time dateTime={msg.createdAt}>{tinyDate(msg.createdAt)} {clock(msg.createdAt)}</time></div>
+              {!mine && supabase && <div className="chat-report-control">{reportDone === msg.id
+                ? <span role="status" className="chat-report-success">Segnalazione registrata</span>
+                : <button type="button" className="chat-report-link" aria-label={`Segnala il messaggio di ${msg.userName}`} onClick={() => { setReportMessageId(v => v === msg.id ? null : msg.id); setReportReason('spam'); setReportNote(''); setReportError(''); }}><Flag size={12}/> Segnala</button>}
+              {reportMessageId === msg.id && <form className="chat-report-form" onSubmit={e => void sendReport(e, msg.id)} aria-label="Segnala messaggio">
+                <label>Perché vuoi segnalare questo messaggio?
+                  <select className="form-input" required value={reportReason} onChange={e => setReportReason(e.target.value as typeof reportReason)}>
+                    <option value="spam">Spam o pubblicità indesiderata</option>
+                    <option value="harassment">Molestie o intimidazioni</option>
+                    <option value="hate">Offese o discriminazione</option>
+                    <option value="privacy">Dati personali condivisi</option>
+                    <option value="other">Altro</option>
+                  </select>
+                </label>
+                <label>Dettagli (facoltativi)
+                  <textarea className="form-input" rows={2} maxLength={500} value={reportNote} onChange={e => setReportNote(e.target.value)} placeholder="Descrivi brevemente il problema..."/>
+                </label>
+                {reportError && <p className="chat-report-error" role="alert">{reportError}</p>}
+                <div className="chat-report-actions"><button type="submit" disabled={reportBusy}>{reportBusy ? 'Invio...' : 'Invia segnalazione'}</button><button type="button" disabled={reportBusy} onClick={() => setReportMessageId(null)}>Annulla</button></div>
+              </form>}</div>}
+            </div></div>;
           })}{!visibleMessages.length && <div className="no-messages">Nessun messaggio ancora. Rompi il ghiaccio! 👋</div>}<div ref={endRef}/></div>
         {hasNewMessages && <button type="button" className="chat-new-messages" onClick={jumpToLatest}>Nuovi messaggi ↓</button>}
         {chatError && <p className="chat-error" role="alert">{chatError}</p>}
         <form className="chat-compose" onSubmit={e => void submit(e)}><input aria-label="Scrivi un messaggio" onFocus={jumpToLatest} value={draft} disabled={sending} maxLength={1200} onChange={e => setDraft(e.target.value)} placeholder="Scrivi un messaggio alla community..."/><button type="submit" disabled={!draft.trim() || sending} aria-label="Invia messaggio"><Send size={19}/></button></form></> : <div className="locked-chat"><span className="locked-chat-icon"><LockKeyhole size={27}/></span><h3>Questa chat è riservata</h3><p>Solo i partecipanti confermati e l'organizzatore possono leggere e scrivere qui.</p><Link to={`/event/${roomId}`} className="btn btn-primary">Vai all'evento <ArrowUpRight size={18}/></Link><button onClick={() => navigate('/chats')} className="back-global"><ArrowLeft size={16}/> Torna alla chat globale</button></div>}</section>
-    </div><div className="community-guidelines"><Users size={17}/> <span><strong>Qui siamo tutti della stessa squadra.</strong> Niente spam, molestie o condivisione di indirizzi privati. Per il lancio pubblico serviranno segnalazioni, blocco utenti e moderazione.</span></div>
+    </div><div className="community-guidelines"><Users size={17}/> <span><strong>Qui siamo tutti della stessa squadra.</strong> Niente spam, molestie o condivisione di indirizzi privati. Puoi segnalare i messaggi dalla conversazione. Il blocco utenti e la gestione completa della moderazione arriveranno prima del lancio pubblico.</span></div>
   </div>;
 }

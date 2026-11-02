@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ArrowUpRight, Bell, BellOff, CalendarDays, Check, CheckCheck,
-  CircleCheck, Clock3, MapPin, MessageCircle, RefreshCw, Settings2, ShieldCheck, Smartphone, Users, X
+  CircleCheck, Clock3, MapPin, RefreshCw, Settings2, ShieldCheck, Smartphone, Users, X
 } from 'lucide-react';
 import { useNotifications, type NoticeKind } from '../lib/notifications';
 import { useStore } from '../lib/store';

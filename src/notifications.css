@@ -87,3 +87,39 @@
 .notice-card-copy>span{font-size:11px}
 .notice-card-trail{gap:5px}
 }
+
+
+/* Explicit iPhone installation and Web Push consent guide. */
+.notice-activation-guide{
+  margin:0 0 22px;padding:22px 23px;border:1px solid #62a892;border-radius:19px;
+  background:linear-gradient(135deg,#1a4b50 0%,#12333e 67%,#152e3b 100%);
+  box-shadow:0 8px 34px rgba(5,17,27,.16);
+}
+.notice-activation-success{border-color:#4e9e7e;background:linear-gradient(135deg,#183e39,#122e3a)}
+.notice-activation-title{display:flex;align-items:flex-start;gap:14px}
+.notice-activation-icon{display:grid;place-items:center;flex:none;width:46px;height:46px;background:#346a65;border:1px solid #6fcba7;border-radius:14px;color:#a8ffd0}
+.notice-activation-title>div{flex:1;min-width:0}
+.notice-activation-title .eyebrow{font-size:10px;letter-spacing:.14em;color:#94f2cc}
+.notice-activation-title h2{font-size:20px;line-height:1.3;margin:6px 0 7px;color:#f0fffa}
+.notice-activation-title p{font-size:12px;line-height:1.7;color:#c1e0db;margin:0}
+.notice-activation-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;margin:17px 0 0 60px;border-radius:12px;padding:13px 20px;font-size:13px}
+.notice-activation-help{margin:11px 0 0 60px;color:#e1d9a6;font-size:11px;line-height:1.7}
+.notice-install-steps{display:grid;gap:11px;margin:19px 0 0 60px}
+.notice-install-steps>span{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.6;color:#d8f6ef}
+.notice-install-steps>span strong{display:grid;place-items:center;flex:none;width:23px;height:23px;background:#509c81;color:#092f33;border-radius:7px;font-size:12px}
+.notice-copy-link,.notice-settings-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;justify-self:start;width:fit-content;border:1px solid #77c7ab;background:#234f50;border-radius:11px;padding:11px 15px;color:#c5ffe5;font-size:12px;font-weight:800}
+.notice-copy-link:hover,.notice-settings-link:hover{border-color:#b1f9d5;background:#31635c}
+.notice-copy-feedback{font-size:11px;color:#d0f7e4;line-height:1.6;margin:0}
+.notice-activation-guide>.notice-success{margin:15px 0 0 60px}
+.notice-activation-guide>.notice-settings-link{margin:16px 0 0 60px}
+@media(max-width:700px){
+  .notice-activation-guide{padding:17px 14px;border-radius:15px;margin-bottom:17px}
+  .notice-activation-title{gap:10px}
+  .notice-activation-icon{width:38px;height:38px;border-radius:11px}
+  .notice-activation-title h2{font-size:16px}
+  .notice-activation-title p{font-size:11px}
+  .notice-install-steps,.notice-activation-help{margin-left:0}
+  .notice-activation-button{width:100%;margin:17px 0 0;font-size:12px}
+  .notice-copy-link{width:100%}
+  .notice-activation-guide>.notice-success,.notice-activation-guide>.notice-settings-link{margin-left:0}
+}

@@ -13,12 +13,15 @@ export type NoticePreferences = {
 };
 type PreferenceKey = 'nearby_events' | 'join_requests' | 'request_results' | 'event_cancellations';
 type Status = 'ready' | 'loading' | 'unsupported' | 'needs-install' | 'denied' | 'error';
+type PreparedPush = { publicKey: string; registration: ServiceWorkerRegistration };
 type NoticeContextValue = {
   notices: Notice[];
   unreadCount: number;
   preferences: NoticePreferences;
   status: Status;
   pushEnabledOnDevice: boolean;
+  pushReady: boolean;
+  pushPreparationError: string | null;
   error: string | null;
   refresh: () => Promise<void>;
   markRead: (id: string) => Promise<void>;
@@ -55,7 +58,33 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<NoticePreferences>(defaults);
   const [status, setStatus] = useState<Status>('loading');
   const [devicePush, setDevicePush] = useState(false);
+  const [pushReady, setPushReady] = useState(false);
+  const [pushPreparationError, setPushPreparationError] = useState<string | null>(null);
+  const pushPrerequisites = useRef<Promise<PreparedPush> | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Preload the public VAPID key and service worker before the user presses
+  // the activation button. Safari requires push permission/subscription to
+  // start from a direct user gesture, not after a network round trip.
+  const preparePush = useCallback((): Promise<PreparedPush> => {
+    const client = supabase;
+    if (!client || !supported()) return Promise.reject(new Error('Web Push non disponibile su questo dispositivo.'));
+    if (!pushPrerequisites.current) {
+      pushPrerequisites.current = Promise.all([
+        client.functions.invoke('ritmo-web-push', { body: { kind: 'public-key' } }),
+        navigator.serviceWorker.register('/sw.js', { scope: '/' }),
+      ]).then(([result, registration]) => {
+        if (result.error || typeof result.data?.publicKey !== 'string') {
+          throw new Error('Impossibile preparare il servizio push. Controlla la connessione e riprova.');
+        }
+        return { publicKey: result.data.publicKey as string, registration };
+      }).catch(err => {
+        pushPrerequisites.current = null;
+        throw err;
+      });
+    }
+    return pushPrerequisites.current;
+  }, []);
 
   const refresh = useCallback(async () => {
     const client = supabase;
@@ -80,6 +109,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     setPreferences(defaults);
     setError(null);
     setDevicePush(false);
+    setPushReady(false);
+    setPushPreparationError(null);
     if (!userId || !supabase) { setStatus('ready'); return; }
     const client = supabase;
     let active = true;
@@ -98,6 +129,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     window.addEventListener('focus', focus);
     document.addEventListener('visibilitychange', focus);
     if (supported()) {
+      if (!isIos() || installed()) {
+        void preparePush().then(() => {
+          if (active && currentUser.current === userId) setPushReady(true);
+        }).catch(err => {
+          if (active && currentUser.current === userId) {
+            setPushPreparationError(err instanceof Error ? err.message : 'Servizio push non disponibile.');
+          }
+        });
+      }
       void navigator.serviceWorker.getRegistration('/').then(async reg => {
         const subscription = await reg?.pushManager.getSubscription();
         if (!subscription || !active || currentUser.current !== userId) return;
@@ -112,7 +152,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       document.removeEventListener('visibilitychange', focus);
       void client.removeChannel(room);
     };
-  }, [userId, refresh]);
+  }, [userId, refresh, preparePush]);
 
   const markRead = useCallback(async (id: string) => {
     if (!supabase || !userId) return;
@@ -146,22 +186,23 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     if (isIos() && !installed()) throw new Error('Su iPhone aggiungi Ritmo Social alla schermata Home da Safari, poi aprilo dall’icona.');
     if (!supported()) throw new Error('Questo browser non supporta le notifiche push per Ritmo Social.');
     if (Notification.permission === 'denied') throw new Error('Le notifiche sono bloccate nelle impostazioni del browser. Autorizzale e riprova.');
+    if (!pushReady || !pushPrerequisites.current) {
+      throw new Error(pushPreparationError || 'Preparazione delle notifiche in corso. Riapri questa pagina tra poco.');
+    }
+    // Permission is requested immediately from the activation button.
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') throw new Error('Autorizzazione non concessa. Puoi riattivarla dalle impostazioni del browser.');
     const client = supabase;
-    const { data, error: functionError } = await client.functions.invoke('ritmo-web-push', { body: { kind: 'public-key' } });
-    if (functionError || typeof data?.publicKey !== 'string') throw new Error('Il servizio push non è disponibile. Riprova più tardi.');
-    const worker = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-    const ready = await navigator.serviceWorker.ready;
-    let subscription = await ready.pushManager.getSubscription();
+    const { publicKey, registration } = await pushPrerequisites.current;
+    let subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       const { data: owned } = await client.from('push_subscriptions').select('id')
         .eq('endpoint', subscription.endpoint).eq('user_id', userId).maybeSingle();
       if (!owned) { await subscription.unsubscribe(); subscription = null; }
     }
     if (!subscription) {
-      subscription = await ready.pushManager.subscribe({
-        userVisibleOnly: true, applicationServerKey: base64UrlToUint8Array(data.publicKey),
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true, applicationServerKey: base64UrlToUint8Array(publicKey),
       });
     }
     const raw = subscription.toJSON();
@@ -182,8 +223,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setDevicePush(true);
       setError(null);
     }
-    void worker; // Registration persists after the browser tab closes.
-  }, [userId, isLive]);
+    // Registration persists after the browser tab closes.
+  }, [userId, isLive, pushReady, pushPreparationError]);
   const disablePush = useCallback(async () => {
     if (!supabase || !userId) return;
     if (supported()) {
@@ -215,9 +256,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<NoticeContextValue>(() => ({
     notices, unreadCount: notices.filter(n => !n.read_at).length,
-    preferences, status, pushEnabledOnDevice: devicePush,
+    preferences, status, pushEnabledOnDevice: devicePush, pushReady, pushPreparationError,
     error, refresh, markRead, markAllRead, setPreference, enablePush, disablePush,
-  }), [notices, preferences, status, devicePush, error, refresh, markRead, markAllRead, setPreference, enablePush, disablePush]);
+  }), [notices, preferences, status, devicePush, pushReady, pushPreparationError, error, refresh, markRead, markAllRead, setPreference, enablePush, disablePush]);
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }

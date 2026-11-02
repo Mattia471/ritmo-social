@@ -75,3 +75,40 @@ h1,h2,h3{letter-spacing:-.6px} h1 em,h2 em{color:#ff9ab6}
 .map-mode-help{color:#bdb1ce;font-size:11px;margin:-8px 0 18px;line-height:1.6}
 .splash-mark{font-size:0}.splash-mark:after{content:'';display:block;width:85px;height:85px;background:url('/logo-icon.svg') center/contain no-repeat}
 @media(max-width:680px){.topbar-mobile .brand-icon{width:36px;height:36px}.topbar-mobile .brand-word{font-size:20px;letter-spacing:-1px;gap:4px}.topbar-mobile .brand-word small{font-size:6px;letter-spacing:1px}.explore-map{height:min(59dvh,520px);min-height:350px;border-radius:19px}.map-selection{left:10px;right:10px;bottom:59px}.map-note{font-size:9px;bottom:9px;left:9px;max-width:calc(100% - 18px)}.map-preview-cover{height:55px;width:59px}.map-preview-copy strong{font-size:11px}.map-legend{gap:9px}.map-legend span{font-size:9px}.map-control-row .map-summary{font-size:10px}}
+
+/* B05-F07 | iOS Safari: avoid automatic zoom when focusing a small form field.
+   Keep user pinch-zoom enabled for accessibility. Applies to editable controls
+   throughout the app, including date, number, search and chat inputs. */
+@media (max-width: 1024px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* B05-F07 | More usable event editing on narrow mobile screens. */
+@media (max-width: 680px) {
+  .create-form .form-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .create-form .form-row > div { min-width: 0; }
+  .create-form .form-input {
+    min-height: 48px;
+    padding: 12px 14px;
+    max-width: 100%;
+  }
+  .create-form .form-label,
+  .create-form .form-row .form-label { font-size: 13px; }
+  .create-form textarea.form-input { min-height: 120px; }
+  .create-form :is(input, select, textarea) {
+    scroll-margin-top: 116px;
+    scroll-margin-bottom: 148px;
+  }
+  /* The fixed five-tab navigation should never overlap an active editor. */
+  .app-shell:has(.create-form :is(input, select, textarea):focus) .bottom-nav {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}

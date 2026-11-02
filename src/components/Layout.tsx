@@ -1,9 +1,10 @@
-import { useState, createContext, useContext, type ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { CalendarHeart, Compass, House, MessageCircle, Plus, UserRound, MapPin, X, Bell, ArrowLeft, LogOut } from 'lucide-react';
 import { Brand, Avatar } from './Shared';
 import { useStore } from '../lib/store';
-import { DEFAULT_LOCATION, type UserLocation } from '../types';
+import { DEFAULT_LOCATION, CITY_AREAS, type UserLocation } from '../types';
+import { cityCenter } from '../lib/geo';
 
 const GeoContext = createContext<{ location: UserLocation; setLocation: (loc: UserLocation) => void; radius: number; setRadius: (km: number) => void }>({ location: DEFAULT_LOCATION, setLocation: () => {}, radius: 10, setRadius: () => {} });
 export const useGeo = () => useContext(GeoContext);
@@ -38,7 +39,8 @@ export function Layout({ children }: { children: ReactNode }) {
     try { const saved = localStorage.getItem('ritmo-geo'); return saved ? JSON.parse(saved) as UserLocation : DEFAULT_LOCATION; } catch { return DEFAULT_LOCATION; }
   });
   const [radius, setRadius] = useState(() => Number(localStorage.getItem('ritmo-radius') || 10));
-  const { error, clearError, userId } = useStore();
+  const { error, clearError, userId, profile } = useStore();
+  useEffect(() => { if (!localStorage.getItem('ritmo-geo') && CITY_AREAS[profile.city]) setLocation(cityCenter(profile.city)); }, [profile.city]);
   const setLocationPersist = (loc: UserLocation) => { setLocation(loc); localStorage.setItem('ritmo-geo', JSON.stringify(loc)); };
   const setRadiusPersist = (km: number) => { setRadius(km); localStorage.setItem('ritmo-radius', String(km)); };
   const pathname = useLocation().pathname;

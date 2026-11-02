@@ -1,4 +1,5 @@
 import { ArrowUpRight, Megaphone } from 'lucide-react';
+import { AdSenseSlot } from './AdSenseSlot';
 
 // Only direct, clearly labeled, contextual sponsors. No tracking or ad-network scripts.
 // Empty configuration intentionally renders nothing until a real sponsor is approved.
@@ -12,7 +13,7 @@ try {
 } catch { /* Sponsors remain disabled until a valid HTTPS URL is configured. */ }
 
 export function SponsorSlot({ placement }: { placement: 'home' | 'explore' }) {
-  if (!sponsorName || !sponsorDescription || !sponsorUrl) return null;
+  if (!sponsorName || !sponsorDescription || !sponsorUrl) return <AdSenseSlot placement={placement}/>;
   return <aside className={`sponsor-slot sponsor-slot-${placement}`} aria-label="Contenuto sponsorizzato">
     <div className="sponsor-heading"><Megaphone size={17}/><span>Sponsorizzato</span></div>
     <div className="sponsor-body"><div><strong>{sponsorName}</strong><p>{sponsorDescription}</p></div>

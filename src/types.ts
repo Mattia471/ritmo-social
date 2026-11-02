@@ -2,7 +2,9 @@ export type Dance = 'Bachata' | 'Salsa' | 'Kizomba' | 'Merengue';
 export type JoinStatus = 'pending' | 'approved' | 'rejected';
 export type Tab = 'home' | 'explore' | 'chats' | 'my-events' | 'profile';
 
-export type UserProfile = { id: string; name: string; initials: string; city: string; bio: string };
+export type UserProfile = { id: string; name: string; initials: string; city: string; bio: string; dances: Dance[]; yearsExperience: number };
+export type SignupInput = { firstName: string; lastName: string; phone: string; email: string; password: string; city: string; dances: Dance[]; yearsExperience: number };
+export const DANCE_CHOICES: Dance[] = ['Bachata', 'Salsa', 'Kizomba', 'Merengue'];
 export type SpotEvent = {
   id: string;
   hostId: string;
@@ -53,11 +55,24 @@ export const CITY_AREAS: Record<string, { name: string; lat: number; lng: number
     { name: 'Chiaia', lat: 40.831, lng: 14.232 },
     { name: 'Centro storico', lat: 40.850, lng: 14.257 },
     { name: 'Fuorigrotta', lat: 40.823, lng: 14.191 },
+    { name: 'Posillipo', lat: 40.813, lng: 14.204 },
+    { name: 'Arenella', lat: 40.863, lng: 14.231 },
   ],
   Milano: [
     { name: 'Navigli', lat: 45.451, lng: 9.174 },
     { name: 'Isola', lat: 45.489, lng: 9.186 },
     { name: 'Porta Romana', lat: 45.452, lng: 9.200 },
+    { name: 'Città Studi', lat: 45.478, lng: 9.230 },
+    { name: 'Porta Venezia', lat: 45.473, lng: 9.206 },
+    { name: 'Centro', lat: 45.464, lng: 9.190 },
+  ],
+  Palermo: [
+    { name: 'Centro storico', lat: 38.117, lng: 13.362 },
+    { name: 'Politeama', lat: 38.125, lng: 13.355 },
+    { name: 'Mondello', lat: 38.198, lng: 13.327 },
+    { name: 'Notarbartolo', lat: 38.132, lng: 13.342 },
+    { name: 'Zisa', lat: 38.119, lng: 13.335 },
+    { name: 'Oreto', lat: 38.101, lng: 13.365 },
   ],
   Bologna: [
     { name: 'Centro', lat: 44.494, lng: 11.342 },

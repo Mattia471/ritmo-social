@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Attendance, ChatMessage, NewEventInput, PrivateVenue, SpotEvent } from '../types';
+import type { Attendance, ChatMessage, Dance, NewEventInput, PrivateVenue, SignupInput, SpotEvent } from '../types';
 import { initialDemo, readDemo, resetDemo, saveDemo, type DemoState } from '../data/demo';
 import { isLive, supabase } from './supabase';
 
@@ -10,7 +10,9 @@ export type AppStore = DemoState & {
   pendingEmail: string | null;
   error: string | null;
   clearError: () => void;
-  signIn: (email: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (input: SignupInput) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
   join: (eventId: string) => Promise<void>;
@@ -19,7 +21,7 @@ export type AppStore = DemoState & {
   simulateApproval: (eventId: string) => void;
   createEvent: (input: NewEventInput) => Promise<string>;
   sendMessage: (eventId: string | null, content: string) => Promise<void>;
-  updateProfile: (name: string, city: string, bio: string) => Promise<void>;
+  updateProfile: (name: string, city: string, bio: string, dances?: Dance[], yearsExperience?: number) => Promise<void>;
   restartDemo: () => void;
 };
 
@@ -44,7 +46,7 @@ const toMessage = (row: Record<string, unknown>, author: Record<string, unknown>
 });
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<DemoState>(() => isLive ? initialDemo() : readDemo());
+  const [data, setData] = useState<DemoState>(() => { const saved = isLive ? initialDemo() : readDemo(); return { ...saved, profile: { ...saved.profile, dances: saved.profile.dances || [], yearsExperience: saved.profile.yearsExperience ?? 0 } }; });
   const [userId, setUserId] = useState<string | null>(isLive ? null : 'me');
   const [loading, setLoading] = useState(isLive);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUserId(user.id);
     const [eventsRes, profilesRes, membershipRes, messagesRes, venueRes] = await Promise.all([
       supabase.from('events').select('*').eq('status', 'published').order('starts_at', { ascending: true }),
-      supabase.from('profiles').select('id, display_name, city, bio'),
+      supabase.from('profiles').select('id, display_name, city, bio, dances, years_experience'),
       supabase.from('attendances').select('*').order('created_at', { ascending: false }),
       supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('event_private').select('event_id, address, directions'),
@@ -79,7 +81,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       attendances: (membershipRes.data || []).map(a => toAttendance(a, profiles.get(a.user_id))),
       messages: (messagesRes.data || []).map(m => toMessage(m, profiles.get(m.user_id))).reverse(),
       venues: (venueRes.data || []).map(v => ({ eventId: v.event_id as string, address: v.address as string, directions: v.directions as string })) as PrivateVenue[],
-      profile: { id: user.id, name, initials: shortName(name), city: String(current?.city || 'Roma'), bio: String(current?.bio || '') },
+      profile: { id: user.id, name, initials: shortName(name), city: String(current?.city || 'Roma'), bio: String(current?.bio || ''), dances: Array.isArray(current?.dances) ? current.dances as Dance[] : [], yearsExperience: Number(current?.years_experience || 0) },
       pro: false,
     });
     setLoading(false);
@@ -103,11 +105,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => { mounted = false; auth.subscription.unsubscribe(); void supabase?.removeChannel(realtime); };
   }, [refresh]);
 
-  const signIn = useCallback(async (email: string) => {
-    if (!supabase) return;
+  const signIn = useCallback(async (email: string, password: string) => {
+    if (!supabase) throw new Error('Autenticazione reale non configurata.');
     try {
-      const { error: signErr } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
-      optionalError(signErr); setPendingEmail(email); setError(null);
+      const { error: signErr } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      optionalError(signErr); setError(null); await refresh();
+    } catch (err) { fail(err); }
+  }, [fail, refresh]);
+  const signUp = useCallback(async (input: SignupInput) => {
+    if (!supabase) throw new Error('Registrazione disponibile solo quando il database sarà collegato.');
+    const firstName = input.firstName.trim().slice(0, 40);
+    const lastName = input.lastName.trim().slice(0, 40);
+    const phone = input.phone.replace(/[\s().-]/g, '');
+    if (!firstName || !lastName || !/^\+[1-9]\d{6,14}$/.test(phone)) throw new Error('Inserisci nome, cognome e un numero internazionale (es. +393331234567).');
+    if (input.dances.length < 1 || !Number.isInteger(input.yearsExperience) || input.yearsExperience < 0 || input.yearsExperience > 50) throw new Error('Seleziona almeno un ballo e gli anni di esperienza.');
+    if (input.password.length < 8) throw new Error('La password deve contenere almeno 8 caratteri.');
+    try {
+      // The auth trigger saves non-secret profile metadata; the password remains inside Supabase Auth.
+      const { data: registered, error: signErr } = await supabase.auth.signUp({ email: input.email.trim().toLowerCase(), password: input.password, options: {
+        emailRedirectTo: window.location.origin,
+        data: { first_name: firstName, last_name: lastName, phone, city: input.city, dances: input.dances, years_experience: input.yearsExperience },
+      } });
+      optionalError(signErr);
+      if (!registered.session) setPendingEmail(input.email.trim().toLowerCase());
+      else await refresh();
+      setError(null);
+    } catch (err) { fail(err); }
+  }, [fail, refresh]);
+  const resetPassword = useCallback(async (email: string) => {
+    if (!supabase) throw new Error('Recupero password non configurato.');
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/reset-password` });
+      optionalError(resetErr); setPendingEmail(email.trim());
     } catch (err) { fail(err); }
   }, [fail]);
   const signOut = useCallback(async () => {
@@ -198,23 +227,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       optionalError(sendErr); await refresh();
     } catch (err) { fail(err); }
   }, [userId, refresh, fail]);
-  const updateProfile = useCallback(async (name: string, city: string, bio: string) => {
+  const updateProfile = useCallback(async (name: string, city: string, bio: string, dances?: Dance[], yearsExperience?: number) => {
     const safeName = name.trim().slice(0, 64); if (!safeName) throw new Error('Inserisci un nome.');
     if (!supabase) {
-      setData(s => ({ ...s, profile: { ...s.profile, name: safeName, initials: shortName(safeName), city, bio },
+      setData(s => ({ ...s, profile: { ...s.profile, name: safeName, initials: shortName(safeName), city, bio, dances: dances ?? s.profile.dances, yearsExperience: yearsExperience ?? s.profile.yearsExperience },
         attendances: s.attendances.map(a => a.userId === 'me' ? { ...a, userName: safeName } : a),
         messages: s.messages.map(m => m.userId === 'me' ? { ...m, userName: safeName } : m),
       })); return;
     }
     if (!userId) return;
     try {
-      const { error: saveErr } = await supabase.from('profiles').update({ display_name: safeName, city, bio }).eq('id', userId);
+      const { error: saveErr } = await supabase.from('profiles').update({ display_name: safeName, city, bio, ...(dances ? { dances } : {}), ...(yearsExperience !== undefined ? { years_experience: yearsExperience } : {}) }).eq('id', userId);
       optionalError(saveErr); await refresh();
     } catch (err) { fail(err); }
   }, [userId, refresh, fail]);
   const restartDemo = useCallback(() => { if (supabase) return; resetDemo(); setData(initialDemo()); }, []);
 
-  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, restartDemo]);
+  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, restartDemo]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useStore = (): AppStore => {

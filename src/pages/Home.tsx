@@ -13,7 +13,11 @@ export function Home() {
   const { location, radius } = useGeo();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const nearby = events.filter(e => isUpcoming(e.startsAt) && distanceFrom(e, location) <= radius).sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const nearby = events.filter(e => isUpcoming(e.startsAt) && distanceFrom(e, location) <= radius).sort((a,b) => {
+    const aMatch = a.dances.some(d => profile.dances?.includes(d));
+    const bMatch = b.dances.some(d => profile.dances?.includes(d));
+    return Number(bMatch) - Number(aMatch) || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
+  });
   const featured = [...nearby].sort((a,b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured))).slice(0,4);
   const spotlight = featured[0];
   return <div className="home-page">
@@ -30,7 +34,7 @@ export function Home() {
         <Link className="btn btn-primary hero-action" to={spotlight ? `/event/${spotlight.id}` : '/explore'}>{spotlight ? "Scopri l'evento" : 'Esplora le serate'} <ArrowUpRight size={19}/></Link>
       </div><span className="hero-sideword">CARIBBEAN VIBES · RITMO SOCIAL</span>
     </section>
-    <div className="home-dance-shortcuts" aria-label="Esplora per stile di ballo"><span>Il tuo stile</span>{['Salsa','Bachata','Kizomba','Merengue'].map(dance => <Link key={dance} to={`/explore?dance=${encodeURIComponent(dance)}`}>{dance}<ArrowUpRight size={13}/></Link>)}</div>
+    <div className="home-dance-shortcuts" aria-label="Esplora per stile di ballo"><span>{profile.dances?.length ? 'Per te · ' + profile.dances.join(' + ') : 'Il tuo stile'}</span>{['Salsa','Bachata','Kizomba','Merengue'].map(dance => <Link key={dance} to={`/explore?dance=${encodeURIComponent(dance)}`}>{dance}<ArrowUpRight size={13}/></Link>)}</div>
     <section className="home-section"><SectionHeading eyebrow="✦ DA NON PERDERE" title="Serate in evidenza" action="Vedi tutte" href="/explore"/>
       {featured.length ? <div className="featured-scroller">{featured.map(e => <div className="featured-slide" key={e.id}><EventCard event={e} distance={distanceFrom(e,location)} horizontal/></div>)}</div> : <div className="inline-empty">Nessuna serata in questo raggio. <Link to="/explore">Prova ad allargare la ricerca.</Link></div>}
     </section>

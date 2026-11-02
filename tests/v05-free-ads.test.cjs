@@ -17,7 +17,7 @@ test('free event creation has a neutral anti-spam limit in both UI and store', (
 });
 test('sponsors never load external scripts and are disabled without configured sponsor', () => {
   const slot=read('src/components/SponsorSlot.tsx');
-  assert.match(slot, /if \(!sponsorName \|\| !sponsorDescription \|\| !sponsorUrl\) return null/);
+  assert.match(slot, /if \(!sponsorName \|\| !sponsorDescription \|\| !sponsorUrl\) return <AdSenseSlot placement=\{placement\}\/>/);
   assert.match(slot, /parsed\.protocol === 'https:'/);
   assert.match(slot, /Sponsorizzato/);
   assert.doesNotMatch(slot, /<script|adsbygoogle|googletag|track\(/);

@@ -44,7 +44,7 @@ test('logo and PWA carry matching new color theme', () => {
 });
 
 test('sponsor stays absent without real data and chats keep fixed keyboard viewport positioning', () => {
-  assert.match(source('src/components/SponsorSlot.tsx'),/if \(!sponsorName \|\| !sponsorDescription \|\| !sponsorUrl\) return null/);
+  assert.match(source('src/components/SponsorSlot.tsx'),/if \(!sponsorName \|\| !sponsorDescription \|\| !sponsorUrl\) return <AdSenseSlot placement=\{placement\}\/>/);
   assert.match(source('src/index.css'),/var\(--ritmo-chat-height,100dvh\)/);
   assert.doesNotMatch(source('src/tropical.css'),/position:\s*fixed[^}]*\.chat|adsbygoogle/);
 });

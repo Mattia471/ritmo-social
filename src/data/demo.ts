@@ -16,7 +16,7 @@ const event = (id: string, title: string, hostName: string, city: string, zone: 
 };
 export function initialDemo(): DemoState {
   return {
-    profile: { id: 'me', name: 'Mattia', initials: 'MC', city: 'Roma', bio: 'Bachata lover. Sempre pronto per una social! 💃' }, pro: false,
+    profile: { id: 'me', name: 'Mattia', initials: 'MC', city: 'Roma', bio: 'Bachata lover. Sempre pronto per una social! 💃', dances: ['Bachata', 'Salsa'], yearsExperience: 4 }, pro: false,
     events: [
       event('e1', 'Bachata under the stars', 'Sofia R.', 'Roma', 'Trastevere', next(5, 22), 0, ['Bachata', 'Salsa'], 10, 28, 'Una notte di connessione, musica e sorrisi. Social aperta a tutti i livelli, vieni anche da solo!', true),
       event('e2', 'Salsa & Sunset Social', 'Marco D.', 'Roma', 'Ostiense', next(6, 21), 1, ['Salsa', 'Bachata'], 8, 39, 'Cuba, New York e un pizzico di magia. DJ set con i migliori brani salsa e qualche sorpresa.', true),
@@ -26,6 +26,7 @@ export function initialDemo(): DemoState {
       event('e6', 'Bachata in città', 'Antonio S.', 'Roma', 'Monte Mario', next(5, 21, 1), 0, ['Bachata'], 5, 14, 'Serata raccolta per fare nuove amicizie e ballare fino a tardi.'),
       event('own-1', 'Social friends & ritmo', 'Mattia', 'Roma', 'Tiburtina', next(6, 20, 1), 1, ['Bachata', 'Salsa'], 0, 8, 'Una serata aperta a chi vuole conoscere nuovi amici e divertirsi.'),
       event('e7', 'Napoli Latin Rooftop', 'Francesca M.', 'Napoli', 'Vomero', next(6, 21), 3, ['Bachata', 'Salsa'], 9, 22, 'Sul rooftop tra musica latina e vista mozzafiato.'),
+      event('e9', 'Palermo Caribbean Social', 'Giovanni P.', 'Palermo', 'Politeama', next(6, 22), 4, ['Bachata', 'Salsa'], 5, 18, 'Un social per fare nuove amicizie in città.'),
       event('e8', 'Milano Social Club', 'Andrea T.', 'Milano', 'Navigli', next(5, 21), 2, ['Bachata', 'Kizomba'], 12, 30, 'La community incontra la pista da ballo.'),
     ],
     venues: [
@@ -38,6 +39,7 @@ export function initialDemo(): DemoState {
       { eventId: 'own-1', address: 'Via Tiburtina 320, Roma', directions: 'Piano terra, porta a sinistra.' },
       { eventId: 'e7', address: 'Via Luca Giordano 12, Napoli', directions: 'Quinto piano.' },
       { eventId: 'e8', address: 'Alzaia Naviglio Grande 24, Milano', directions: 'Ingresso cortile.' },
+      { eventId: 'e9', address: 'Zona Politeama, Palermo (indirizzo demo)', directions: 'Luogo inventato per test; non è un evento reale.' },
     ],
     attendances: [
       { id: 'a1', eventId: 'e2', userId: 'me', userName: 'Mattia', status: 'approved', createdAt: slot(-2, 12) },

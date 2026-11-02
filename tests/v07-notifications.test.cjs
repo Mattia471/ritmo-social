@@ -70,3 +70,22 @@ test('unread bell and deep links exist across mobile and desktop layouts', () =>
   assert.match(profile, /Notifiche e preferenze/);
   assert.match(profile, /await disablePush\(\)/);
 });
+
+
+test('push permission is tied to a clear tap and service worker is preloaded', () => {
+  const context = read('src/lib/notifications.tsx');
+  const page = read('src/pages/Notifications.tsx');
+  assert.match(context, /const preparePush = useCallback/);
+  assert.match(context, /pushPrerequisites\.current = Promise\.all\(/);
+  assert.match(context, /navigator\.serviceWorker\.register\('\/sw\.js'/);
+  const enableStart = context.indexOf('const enablePush = useCallback');
+  const enableEnd = context.indexOf('const disablePush = useCallback');
+  const enable = context.slice(enableStart, enableEnd);
+  assert.ok(enable.indexOf('Notification.requestPermission()') < enable.indexOf('pushManager.subscribe('));
+  assert.doesNotMatch(enable, /functions\.invoke/);
+  assert.match(page, /notice-activation-guide/);
+  assert.match(page, /Copia link per Safari/);
+  assert.match(page, /Attiva notifiche push/);
+  assert.match(page, /capability === 'needs-install'/);
+  assert.match(page, /!pushReady/);
+});

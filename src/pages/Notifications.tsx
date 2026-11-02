@@ -22,10 +22,23 @@ const prefs = [
   { key: 'event_cancellations' as const, title: 'Serate annullate', detail: 'Se un evento a cui sei iscritto viene annullato.', icon: CalendarDays },
 ];
 
+type PushCapability = 'needs-install' | 'unsupported' | 'denied' | 'allowed' | 'ready';
+function detectPushCapability(): PushCapability {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return 'unsupported';
+  const onIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches
+    || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  if (onIos && !standalone) return 'needs-install';
+  if (!window.isSecureContext || !('Notification' in window)
+    || !('PushManager' in window) || !('serviceWorker' in navigator)) return 'unsupported';
+  if (Notification.permission === 'denied') return 'denied';
+  return Notification.permission === 'granted' ? 'allowed' : 'ready';
+}
+
 export function NotificationsPage() {
   const { isLive, profile } = useStore();
   const {
-    notices, unreadCount, preferences, status, pushEnabledOnDevice, error,
+    notices, unreadCount, preferences, status, pushEnabledOnDevice, pushReady, pushPreparationError, error,
     refresh, markRead, markAllRead, setPreference, enablePush, disablePush,
   } = useNotifications();
   const [tab, setTab] = useState<'all' | 'unread'>('all');
@@ -34,6 +47,14 @@ export function NotificationsPage() {
   const [localError, setLocalError] = useState('');
   const [pushFeedback, setPushFeedback] = useState('');
   const [filterBusy, setFilterBusy] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState('');
+  const capability = detectPushCapability();
+  const deviceReady = pushEnabledOnDevice && preferences.push_enabled;
+  const copySiteLink = () => {
+    void navigator.clipboard.writeText(window.location.origin + '/notifications')
+      .then(() => setCopyState('Link copiato. Incollalo nella barra degli indirizzi di Safari.'))
+      .catch(() => setCopyState('Apri la stessa pagina direttamente in Safari per installare Ritmo Social.'));
+  };
   const visible = tab === 'unread' ? notices.filter(n => !n.read_at) : notices;
   const run = async (fn: () => Promise<void>, action: string, success = '') => {
     setBusyAction(action); setLocalError('');
@@ -45,6 +66,43 @@ export function NotificationsPage() {
     <div className="page-intro notice-intro"><p className="eyebrow">RESTA NEL RITMO</p>
       <h1>Le tue <em>notifiche.</em></h1>
       <p>Nuovi eventi, partecipazioni e aggiornamenti dalle tue serate. Tutto in un solo posto.</p></div>
+    {isLive && <section className={`notice-activation-guide ${deviceReady ? 'notice-activation-success' : ''}`} aria-label="Attivazione notifiche push">
+      <div className="notice-activation-title">
+        <span className="notice-activation-icon"><Bell size={22}/></span>
+        <div><span className="eyebrow">NOTIFICHE SUL TELEFONO</span>
+          <h2>{deviceReady ? 'Notifiche push attive!' : capability === 'needs-install' ? 'Installa Ritmo Social per ricevere le notifiche' : capability === 'denied' ? 'Notifiche bloccate dal dispositivo' : 'Ricevi gli avvisi anche quando l’app è chiusa'}</h2>
+          <p>{deviceReady
+            ? 'Questo dispositivo è registrato. Riceverai gli avvisi che hai scelto nelle preferenze.'
+            : capability === 'needs-install'
+              ? 'Su iPhone le notifiche funzionano solo aprendo Ritmo Social dall’icona aggiunta alla schermata Home.'
+              : capability === 'denied'
+                ? 'Hai già negato il permesso. Abilita Ritmo Social nelle impostazioni delle notifiche del dispositivo.'
+                : capability === 'unsupported'
+                  ? 'Il browser attuale non permette le notifiche push. Gli avvisi dentro Ritmo Social restano disponibili.'
+                  : 'Attiva una volta le notifiche per conoscere subito nuove serate, richieste e conferme.'}</p>
+        </div>
+      </div>
+      {capability === 'needs-install' && !deviceReady && <div className="notice-install-steps">
+        <span><strong>1</strong> Apri il sito in Safari.</span>
+        <span><strong>2</strong> Premi Condividi e scegli «Aggiungi alla schermata Home».</span>
+        <span><strong>3</strong> Apri Ritmo Social dalla nuova icona, poi premi «Attiva notifiche».</span>
+        <button type="button" onClick={copySiteLink} className="notice-copy-link"><ArrowUpRight size={16}/> Copia link per Safari</button>
+        {copyState && <p className="notice-copy-feedback" role="status">{copyState}</p>}
+      </div>}
+      {!deviceReady && (capability === 'ready' || capability === 'allowed') && <>
+        <button type="button" className="btn btn-primary notice-activation-button"
+          disabled={Boolean(busyAction) || !pushReady}
+          onClick={() => void run(enablePush, 'push', 'Notifiche push attivate su questo dispositivo!')}>
+          <Bell size={17}/> {busyAction === 'push' ? 'Attivazione...' : !pushReady ? 'Preparazione notifiche...' : capability === 'allowed' ? 'Completa attivazione push' : 'Attiva notifiche push'}
+        </button>
+        {!pushReady && pushPreparationError && <p className="notice-activation-help" role="alert">{pushPreparationError} Riapri questa pagina per riprovare.</p>}
+        {!pushReady && !pushPreparationError && <p className="notice-activation-help">Sto preparando il servizio push prima di richiedere il permesso.</p>}
+      </>}
+      {capability === 'denied' && !deviceReady && <p className="notice-activation-help">Su iPhone: Impostazioni → Notifiche → Ritmo Social → Consenti notifiche. Poi riapri l'app dall'icona Home.</p>}
+      {pushFeedback && <p className="notice-success" role="status"><Check size={15}/>{pushFeedback}</p>}
+      {localError && <p className="notice-activation-help" role="alert">{localError}</p>}
+      {deviceReady && <button type="button" className="notice-settings-link" onClick={() => setSettingsOpen(true)}><Settings2 size={16}/> Gestisci preferenze e dispositivi</button>}
+    </section>}
     <div className="notice-top-actions">
       <div className="notice-tabs">
         <button type="button" className={tab === 'all' ? 'selected' : ''} onClick={() => setTab('all')}>Tutte <span>{notices.length}</span></button>
@@ -73,7 +131,7 @@ export function NotificationsPage() {
         <div className="notice-push-buttons">
           {pushEnabledOnDevice && preferences.push_enabled
             ? <button className="btn btn-outline" type="button" disabled={Boolean(busyAction)} onClick={() => void run(disablePush, 'push', 'Notifiche push disattivate su questo dispositivo.')}><BellOff size={16}/> Disattiva push</button>
-            : <button className="btn btn-primary" type="button" disabled={Boolean(busyAction) || !isLive} onClick={() => void run(enablePush, 'push', 'Notifiche push attivate su questo dispositivo!')}><Bell size={16}/> Attiva notifiche push</button>}
+            : <button className="btn btn-primary" type="button" disabled={Boolean(busyAction) || !isLive || !pushReady || capability === 'needs-install' || capability === 'denied' || capability === 'unsupported'} onClick={() => void run(enablePush, 'push', 'Notifiche push attivate su questo dispositivo!')}><Bell size={16}/> {capability === 'needs-install' ? 'Installa prima l’app' : !pushReady ? 'Preparazione push...' : 'Attiva notifiche push'}</button>}
         </div>
         {pushFeedback && <p className="notice-success" role="status"><Check size={15}/>{pushFeedback}</p>}
         <p className="notice-device-hint"><ShieldCheck size={14}/> Nessuna richiesta automatica di permessi. Su iPhone apri il sito da Safari, premi Condividi → Aggiungi alla schermata Home e avvia Ritmo dall’icona prima di attivare le push.</p>

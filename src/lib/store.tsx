@@ -122,14 +122,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const join = useCallback(async (eventId: string) => {
     if (!userId) return;
     if (!supabase) {
-      setData(s => ({ ...s, attendances: [...s.attendances, { id: crypto.randomUUID(), eventId, userId, userName: s.profile.name, status: 'pending', createdAt: new Date().toISOString() }] }));
+      const event = data.events.find(e => e.id === eventId);
+      if (!event) return fail(new Error('Serata non trovata.'));
+      if (event.hostId === userId) return fail(new Error('Non puoi iscriverti alla tua serata.'));
+      if (new Date(event.startsAt).getTime() <= Date.now()) return fail(new Error('Questa serata è già iniziata.'));
+      if (event.approvedCount >= event.maxPeople) return fail(new Error('Tutti i posti sono occupati.'));
+      // Check the latest state too: rapid repeated taps must never duplicate a request.
+      setData(s => s.attendances.some(a => a.eventId === eventId && a.userId === userId)
+        ? s
+        : ({ ...s, attendances: [...s.attendances, { id: crypto.randomUUID(), eventId, userId, userName: s.profile.name, status: 'pending', createdAt: new Date().toISOString() }] }));
       return;
     }
     try {
       const { error: joinErr } = await supabase.from('attendances').insert({ event_id: eventId, user_id: userId });
       optionalError(joinErr); await refresh();
     } catch (err) { fail(err); }
-  }, [userId, refresh, fail]);
+  }, [userId, data.events, refresh, fail]);
   const cancelJoin = useCallback(async (eventId: string) => {
     if (!userId) return;
     if (!supabase) { setData(s => ({ ...s, attendances: s.attendances.filter(a => !(a.eventId === eventId && a.userId === userId)), events: s.events.map(e => e.id === eventId && s.attendances.some(a => a.eventId === eventId && a.userId === userId && a.status === 'approved') ? {...e, approvedCount: Math.max(0, e.approvedCount - 1)} : e) })); return; }
@@ -140,28 +148,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [userId, refresh, fail]);
   const resolve = useCallback(async (attendanceId: string, status: 'approved' | 'rejected') => {
     if (!supabase) {
-      setData(s => {
-        const prev = s.attendances.find(a => a.id === attendanceId);
-        return { ...s,
-          attendances: s.attendances.map(a => a.id === attendanceId ? { ...a, status } : a),
-          events: s.events.map(e => e.id === prev?.eventId && prev.status !== 'approved' && status === 'approved' ? { ...e, approvedCount: e.approvedCount + 1 } : e),
-        };
-      }); return;
+      const request = data.attendances.find(a => a.id === attendanceId);
+      const event = data.events.find(e => e.id === request?.eventId);
+      if (!request || !event || request.status !== 'pending') return fail(new Error('Richiesta non più disponibile.'));
+      if (event.hostId !== userId) return fail(new Error('Solo chi organizza può gestire le richieste.'));
+      if (status === 'approved' && event.approvedCount >= event.maxPeople) return fail(new Error('Capienza raggiunta: non puoi approvare altri partecipanti.'));
+      setData(s => ({ ...s,
+        attendances: s.attendances.map(a => a.id === attendanceId ? { ...a, status } : a),
+        events: s.events.map(e => e.id === request.eventId && status === 'approved' ? { ...e, approvedCount: e.approvedCount + 1 } : e),
+      })); return;
     }
     try {
       const { error: updateErr } = await supabase.rpc('resolve_join_request', { p_attendance_id: attendanceId, p_status: status });
       optionalError(updateErr); await refresh();
     } catch (err) { fail(err); }
-  }, [refresh, fail]);
+  }, [data.attendances, data.events, userId, refresh, fail]);
   const simulateApproval = useCallback((eventId: string) => {
     if (supabase) return;
-    setData(s => ({ ...s, attendances: s.attendances.map(a => a.eventId === eventId && a.userId === 'me' ? { ...a, status: 'approved' } : a), events: s.events.map(e => e.id === eventId && s.attendances.some(a => a.eventId === eventId && a.userId === 'me' && a.status === 'pending') ? { ...e, approvedCount: e.approvedCount + 1 } : e) }));
-  }, []);
+    const event = data.events.find(e => e.id === eventId);
+    if (event && event.approvedCount >= event.maxPeople) {
+      setError('Capienza raggiunta: non puoi simulare altre approvazioni.'); return;
+    }
+    setData(s => ({ ...s, attendances: s.attendances.map(a => a.eventId === eventId && a.userId === 'me' && a.status === 'pending' ? { ...a, status: 'approved' } : a), events: s.events.map(e => e.id === eventId && s.attendances.some(a => a.eventId === eventId && a.userId === 'me' && a.status === 'pending') ? { ...e, approvedCount: e.approvedCount + 1 } : e) }));
+  }, [data.events]);
   const createEvent = useCallback(async (input: NewEventInput): Promise<string> => {
     if (!userId) throw new Error('Devi accedere per creare un evento.');
     if (!supabase) {
       const now = new Date();
-      const createdThisMonth = data.events.filter(e => e.hostId === userId && new Date(e.createdAt || e.startsAt).getMonth() === now.getMonth() && new Date(e.createdAt || e.startsAt).getFullYear() === now.getFullYear()).length;
+      const createdThisMonth = data.events.filter(e => e.hostId === userId && e.id !== 'own-1' && new Date(e.createdAt || e.startsAt).getMonth() === now.getMonth() && new Date(e.createdAt || e.startsAt).getFullYear() === now.getFullYear()).length;
       if (!data.pro && createdThisMonth >= 2) throw new Error('Limite Free raggiunto: massimo 2 eventi creati al mese.');
       const id = crypto.randomUUID();
       const { address, directions, ...publicEvent } = input;

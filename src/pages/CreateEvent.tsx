@@ -39,7 +39,7 @@ export function CreateEvent() {
   const [cover, setCover] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const myEventsThisMonth = events.filter(e => e.hostId === userId && new Date(e.createdAt || e.startsAt).getMonth() === new Date().getMonth() && new Date(e.createdAt || e.startsAt).getFullYear() === new Date().getFullYear()).length;
+  const myEventsThisMonth = events.filter(e => e.hostId === userId && e.id !== 'own-1' && new Date(e.createdAt || e.startsAt).getMonth() === new Date().getMonth() && new Date(e.createdAt || e.startsAt).getFullYear() === new Date().getFullYear()).length;
   const freeLimitReached = !pro && myEventsThisMonth >= 2;
   const toggleDance = (dance: Dance) => setDances(list => list.includes(dance) ? (list.length === 1 ? list : list.filter(d => d !== dance)) : [...list, dance]);
   const goTo = (index: number) => {

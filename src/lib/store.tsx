@@ -54,7 +54,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   // Live conversations are loaded per room. Avoid fetching every private room
   // on each unrelated event/attendance refresh.
-  const emptyLiveChats = () => ({ events: [], attendances: [], messages: [], venues: [] });
+  const emptyLiveChats = () => ({
+    events: [], attendances: [], messages: [], venues: [],
+    // Never show the previous account's profile after logout or session expiry.
+    profile: { id: '', name: 'Ballerino', initials: 'BA', city: 'Roma', bio: '', dances: [] as Dance[], yearsExperience: 0 },
+    pro: false,
+  });
   const fail = useCallback((err: unknown): never => {
     const message = err instanceof Error ? err.message : 'Si è verificato un errore. Riprova.';
     setError(message); throw new Error(message);

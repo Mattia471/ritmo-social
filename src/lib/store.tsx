@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Attendance, ChatMessage, Dance, NewEventInput, PrivateVenue, SignupInput, SpotEvent } from '../types';
 import { initialDemo, readDemo, resetDemo, saveDemo, type DemoState } from '../data/demo';
 import { isLive, supabase } from './supabase';
@@ -23,6 +23,9 @@ export type AppStore = DemoState & {
   sendMessage: (eventId: string | null, content: string) => Promise<void>;
   reportMessage: (messageId: string, reason: 'spam' | 'harassment' | 'hate' | 'privacy' | 'other', note: string) => Promise<void>;
   loadChatMessages: (eventId: string | null) => Promise<void>;
+  blockedUsers: Array<{ id: string; name: string }>;
+  blockUser: (memberId: string) => Promise<void>;
+  unblockUser: (memberId: string) => Promise<void>;
   updateProfile: (name: string, city: string, bio: string, dances?: Dance[], yearsExperience?: number) => Promise<void>;
   restartDemo: () => void;
 };
@@ -63,6 +66,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(isLive);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [blockedUsers, setBlockedUsers] = useState<Array<{ id: string; name: string }>>([]);
+  // Invalidate requests started by a previous session before they can update UI.
+  const sessionRevision = useRef(0);
   // Live conversations are loaded per room. Avoid fetching every private room
   // on each unrelated event/attendance refresh.
   const emptyLiveChats = () => ({
@@ -81,19 +87,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!supabase) return;
+    const revision = sessionRevision.current;
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     optionalError(authErr);
-    if (!user) { setUserId(null); setData(s => ({ ...s, ...emptyLiveChats() })); setLoading(false); return; }
+    if (revision !== sessionRevision.current) return;
+    if (!user) { setBlockedUsers([]); setUserId(null); setData(s => ({ ...s, ...emptyLiveChats() })); setLoading(false); return; }
     setUserId(user.id);
-    const [eventsRes, profilesRes, membershipRes, venueRes] = await Promise.all([
+    const [eventsRes, profilesRes, membershipRes, venueRes, blocksRes] = await Promise.all([
       supabase.from('events').select('*').eq('status', 'published').order('starts_at', { ascending: true }),
       supabase.from('profiles').select('id, display_name, city, bio, dances, years_experience'),
       supabase.from('attendances').select('*').order('created_at', { ascending: false }),
       supabase.from('event_private').select('event_id, address, directions'),
+      supabase.from('user_blocks').select('blocked_id'),
     ]);
-    for (const res of [eventsRes, profilesRes, membershipRes, venueRes]) optionalError(res.error);
+    if (revision !== sessionRevision.current) return;
+    for (const res of [eventsRes, profilesRes, membershipRes, venueRes, blocksRes]) optionalError(res.error);
     const profiles = new Map<string, Record<string, unknown>>((profilesRes.data || []).map(p => [String(p.id), p as Record<string, unknown>]));
     const current = profiles.get(user.id);
+    setBlockedUsers((blocksRes.data || []).map(block => ({ id: String(block.blocked_id), name: String(profiles.get(String(block.blocked_id))?.display_name || 'Utente') })));
     const name = String(current?.display_name || user.email?.split('@')[0] || 'Ballerino');
     setData(s => ({
       events: (eventsRes.data || []).map(e => toEvent(e, profiles.get(e.host_id))),
@@ -112,7 +123,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     void refresh().catch(err => { if (mounted) { setError(String(err.message)); setLoading(false); } });
     const { data: auth } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      if (!session) { setUserId(null); setData(s => ({ ...s, ...emptyLiveChats() })); setLoading(false); return; }
+      sessionRevision.current += 1;
+      if (!session) { setBlockedUsers([]); setUserId(null); setData(s => ({ ...s, ...emptyLiveChats() })); setLoading(false); return; }
       // Defer queries outside the auth callback to prevent auth-client deadlocks.
       setTimeout(() => { if (mounted) void refresh().catch(err => setError(String(err.message))); }, 0);
     });
@@ -161,7 +173,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     const { error: signErr } = await supabase.auth.signOut();
     if (signErr) fail(signErr);
-    setUserId(null); setPendingEmail(null);
+    sessionRevision.current += 1;
+    setBlockedUsers([]); setUserId(null); setPendingEmail(null);
     setData(s => ({ ...s, ...emptyLiveChats() }));
   }, [fail]);
 
@@ -239,6 +252,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [userId, data.events, refresh, fail]);
   const loadChatMessages = useCallback(async (eventId: string | null) => {
     if (!supabase || !userId) return;
+    const revision = sessionRevision.current;
     // The database enforces room membership with RLS. Load only the latest
     // messages for the current conversation; never truncate across all rooms.
     let query = supabase.from('chat_messages')
@@ -247,6 +261,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     query = eventId === null ? query.is('event_id', null) : query.eq('event_id', eventId);
     const { data: rows, error: loadErr } = await query;
     optionalError(loadErr);
+    if (revision !== sessionRevision.current) return;
     const loaded = (rows || []).map(row => {
       const author = Array.isArray(row.author) ? row.author[0] : row.author;
       return toMessage(row, author as Record<string, unknown> | undefined);
@@ -259,6 +274,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const sendMessage = useCallback(async (eventId: string | null, content: string) => {
+    const revision = sessionRevision.current;
     const safeText = content.trim().slice(0, 1200);
     if (!safeText) throw new Error('Scrivi un messaggio prima di inviarlo.');
     if (!userId) throw new Error('Accedi per inviare un messaggio.');
@@ -271,6 +287,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         .insert({ event_id: eventId, user_id: userId, content: safeText })
         .select('id, event_id, user_id, content, created_at').single();
       optionalError(sendErr);
+      if (revision !== sessionRevision.current) return;
       if (inserted) setData(s => ({
         ...s,
         messages: s.messages.some(msg => msg.id === inserted.id) ? s.messages : [...s.messages, toMessage(inserted, { display_name: s.profile.name })]
@@ -286,6 +303,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       optionalError(reportErr);
     } catch (err) { fail(err); }
   }, [userId, fail]);
+
+  const blockUser = useCallback(async (memberId: string) => {
+    if (!supabase || !userId) throw new Error('Accedi per bloccare una persona.');
+    if (!memberId || memberId === userId) throw new Error('Non puoi bloccare questo account.');
+    try {
+      const { error: blockErr } = await supabase.from('user_blocks')
+        .insert({ blocker_id: userId, blocked_id: memberId });
+      optionalError(blockErr);
+      // Hide already-loaded content immediately, before any Realtime event.
+      setData(s => ({ ...s, messages: s.messages.filter(message => message.userId !== memberId) }));
+      await refresh();
+    } catch (err) { fail(err); }
+  }, [userId, refresh, fail]);
+  const unblockUser = useCallback(async (memberId: string) => {
+    if (!supabase || !userId) throw new Error('Accedi per sbloccare una persona.');
+    try {
+      const { error: unblockErr } = await supabase.from('user_blocks')
+        .delete().eq('blocker_id', userId).eq('blocked_id', memberId);
+      optionalError(unblockErr);
+      await refresh();
+    } catch (err) { fail(err); }
+  }, [userId, refresh, fail]);
 
   const updateProfile = useCallback(async (name: string, city: string, bio: string, dances?: Dance[], yearsExperience?: number) => {
     const safeName = name.trim().slice(0, 64); if (!safeName) throw new Error('Inserisci un nome.');
@@ -303,7 +342,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [userId, refresh, fail]);
   const restartDemo = useCallback(() => { if (supabase) return; resetDemo(); setData(initialDemo()); }, []);
 
-  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo]);
+  const value = useMemo<AppStore>(() => ({ ...data, blockedUsers, blockUser, unblockUser, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo }), [data, blockedUsers, blockUser, unblockUser, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useStore = (): AppStore => {

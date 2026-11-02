@@ -274,3 +274,38 @@ small,.page-intro>p:last-child{color:var(--muted)}
   .home-dance-shortcuts{margin-left:-13px;margin-right:-13px;padding-left:13px}
 }
 @media(prefers-reduced-motion:reduce){.hero-visual,.brand-icon{animation:none;transition:none}}
+
+
+/* v0.6.1 | iPhone Home Screen PWA safe area
+   With apple-mobile-web-app-status-bar-style=black-translucent and
+   viewport-fit=cover, iOS paints the status bar over the page. The normal
+   mobile header must sit below the clock / Dynamic Island. Safari tabs stay
+   unchanged; only installed iOS apps get the extra safe-area spacing. */
+@media (max-width: 680px) {
+  html.ritmo-ios-standalone {
+    --ritmo-ios-safe-top: max(20px, env(safe-area-inset-top, 0px));
+  }
+  html.ritmo-ios-standalone .app-shell,
+  html.ritmo-ios-standalone .auth-shell {
+    padding-top: var(--ritmo-ios-safe-top);
+  }
+  /* Keep the system status area the same dark colour as the topbar. */
+  html.ritmo-ios-standalone .app-shell::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto;
+    height: var(--ritmo-ios-safe-top);
+    background: #091d26;
+    pointer-events: none;
+    z-index: 1900;
+  }
+  /* A conversation uses a fixed VisualViewport-sized pane rather than the
+     document flow; inset that pane itself to protect its conversation header.
+     The total pane height stays unchanged so the keyboard remains aligned. */
+  html.ritmo-ios-standalone .app-shell:has(.chat-mobile-conversation) {
+    padding-top: 0;
+  }
+  html.ritmo-ios-standalone .app-shell:has(.chat-mobile-conversation) .main-area {
+    padding-top: var(--ritmo-ios-safe-top);
+  }
+}

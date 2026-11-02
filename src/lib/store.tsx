@@ -21,6 +21,7 @@ export type AppStore = DemoState & {
   simulateApproval: (eventId: string) => void;
   createEvent: (input: NewEventInput) => Promise<string>;
   sendMessage: (eventId: string | null, content: string) => Promise<void>;
+  reportMessage: (messageId: string, reason: 'spam' | 'harassment' | 'hate' | 'privacy' | 'other', note: string) => Promise<void>;
   loadChatMessages: (eventId: string | null) => Promise<void>;
   updateProfile: (name: string, city: string, bio: string, dances?: Dance[], yearsExperience?: number) => Promise<void>;
   restartDemo: () => void;
@@ -28,6 +29,16 @@ export type AppStore = DemoState & {
 
 const Context = createContext<AppStore | null>(null);
 const optionalError = (error: { message: string } | null): void => { if (error) throw new Error(error.message); };
+const explainError = (error: unknown): string => {
+  const raw = error instanceof Error ? error.message : 'Si è verificato un errore. Riprova.';
+  if (/email rate limit exceeded|email rate limit|over_email_send_rate_limit/i.test(raw))
+    return 'Limite temporaneo delle email raggiunto. Riprova più tardi: il servizio di prova Supabase consente pochi invii.';
+  if (/invalid login credentials/i.test(raw)) return 'Email o password non corrette.';
+  if (/email not confirmed/i.test(raw)) return 'Devi ancora confermare la tua email. Controlla la posta e lo spam.';
+  if (/user already registered/i.test(raw)) return 'Questa email risulta già registrata. Prova ad accedere.';
+  if (/duplicate key.*message_reports|message_reports_reporter_id_message_id_key/i.test(raw)) return 'Hai già segnalato questo messaggio.';
+  return raw;
+};
 const shortName = (name: string) => name.split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
 
 const toEvent = (row: Record<string, unknown>, author: Record<string, unknown> | undefined): SpotEvent => ({
@@ -61,7 +72,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     pro: false,
   });
   const fail = useCallback((err: unknown): never => {
-    const message = err instanceof Error ? err.message : 'Si è verificato un errore. Riprova.';
+    const message = explainError(err);
     setError(message); throw new Error(message);
   }, []);
   const clearError = useCallback(() => setError(null), []);
@@ -267,6 +278,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }));
     } catch (err) { fail(err); }
   }, [userId, fail]);
+  const reportMessage = useCallback(async (messageId: string, reason: 'spam' | 'harassment' | 'hate' | 'privacy' | 'other', note: string) => {
+    if (!supabase || !userId) throw new Error('Le segnalazioni sono disponibili solo per gli account connessi.');
+    try {
+      const { error: reportErr } = await supabase.from('message_reports')
+        .insert({ reporter_id: userId, message_id: messageId, reason, note: note.trim().slice(0, 500) });
+      optionalError(reportErr);
+    } catch (err) { fail(err); }
+  }, [userId, fail]);
+
   const updateProfile = useCallback(async (name: string, city: string, bio: string, dances?: Dance[], yearsExperience?: number) => {
     const safeName = name.trim().slice(0, 64); if (!safeName) throw new Error('Inserisci un nome.');
     if (!supabase) {
@@ -277,13 +297,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     if (!userId) return;
     try {
-      const { error: saveErr } = await supabase.from('profiles').update({ display_name: safeName, city, bio, ...(dances ? { dances } : {}), ...(yearsExperience !== undefined ? { years_experience: yearsExperience } : {}) }).eq('id', userId);
+      const { error: saveErr } = await supabase.from('profiles').update({ display_name: safeName, city, bio, ...(dances ? { dances } : {}), ...(yearsExperience !== undefined ? { years_experience: yearsExperience } : {}) }).eq('id', userId).select('id').single();
       optionalError(saveErr); await refresh();
     } catch (err) { fail(err); }
   }, [userId, refresh, fail]);
   const restartDemo = useCallback(() => { if (supabase) return; resetDemo(); setData(initialDemo()); }, []);
 
-  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, loadChatMessages, updateProfile, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, loadChatMessages, updateProfile, restartDemo]);
+  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useStore = (): AppStore => {

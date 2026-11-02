@@ -8,7 +8,6 @@ import { MyEvents } from './pages/MyEvents';
 import { Chats } from './pages/Chats';
 import { CreateEvent } from './pages/CreateEvent';
 import { Profile } from './pages/Profile';
-import { Plus } from './pages/Plus';
 import { Auth } from './pages/Auth';
 
 function InsideApp() {
@@ -24,7 +23,7 @@ function InsideApp() {
     <Route path="/chats/:roomId" element={<Chats/>}/>
     <Route path="/create" element={<CreateEvent/>}/>
     <Route path="/profile" element={<Profile/>}/>
-    <Route path="/plus" element={<Plus/>}/>
+    <Route path="/plus" element={<Navigate to="/create" replace/>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes></Layout>;
 }

@@ -22,7 +22,7 @@ const formatDateTime = (value: string) => value && !Number.isNaN(new Date(value)
 
 export function CreateEvent() {
   const navigate = useNavigate();
-  const { createEvent, events, userId, pro } = useStore();
+  const { createEvent, events, userId } = useStore();
   const formRef = useRef<HTMLFormElement>(null);
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
@@ -39,15 +39,15 @@ export function CreateEvent() {
   const [cover, setCover] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const myEventsThisMonth = events.filter(e => e.hostId === userId && e.id !== 'own-1' && new Date(e.createdAt || e.startsAt).getMonth() === new Date().getMonth() && new Date(e.createdAt || e.startsAt).getFullYear() === new Date().getFullYear()).length;
-  const freeLimitReached = !pro && myEventsThisMonth >= 2;
+  const myEventsToday = events.filter(e => e.hostId === userId && e.id !== 'own-1' && new Date(e.createdAt || e.startsAt).getTime() > Date.now() - 24 * 60 * 60 * 1000).length;
+  const rateLimitReached = myEventsToday >= 10;
   const toggleDance = (dance: Dance) => setDances(list => list.includes(dance) ? (list.length === 1 ? list : list.filter(d => d !== dance)) : [...list, dance]);
   const goTo = (index: number) => {
     setStep(index); setError('');
     requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
   const validate = (index: number) => {
-    if (freeLimitReached) return 'Hai raggiunto il limite del piano Free. Passa a Plus per creare altre serate.';
+    if (rateLimitReached) return 'Hai raggiunto il limite anti-spam di 10 serate in 24 ore. Riprova più tardi.';
     if (index === 0 && title.trim().length < 4) return 'Inserisci un titolo di almeno 4 caratteri.';
     if (index === 1) {
       if (Number.isNaN(new Date(startsAt).getTime()) || new Date(startsAt) <= new Date()) return 'La data di inizio deve essere valida e futura.';
@@ -117,8 +117,8 @@ export function CreateEvent() {
         <button type="button" className="wizard-edit-link" onClick={() => goTo(1)}>Modifica data o luogo <ArrowRight size={16}/></button>
       </section>}
       {error && <p className="form-error" role="alert"><Info size={18}/>{error}</p>}
-      <div className="wizard-navigation"><button type="button" className="btn btn-outline" disabled={step === 0 || busy} onClick={() => goTo(step - 1)}><ArrowLeft size={18}/> Indietro</button>{step < 3 ? <button type="button" className="btn btn-primary" onClick={next}>Continua <ArrowRight size={18}/></button> : <button type="submit" className="btn btn-primary" disabled={busy || freeLimitReached}>{busy ? 'Pubblicazione...' : 'Pubblica la serata'} <ArrowRight size={18}/></button>}</div>
+      <div className="wizard-navigation"><button type="button" className="btn btn-outline" disabled={step === 0 || busy} onClick={() => goTo(step - 1)}><ArrowLeft size={18}/> Indietro</button>{step < 3 ? <button type="button" className="btn btn-primary" onClick={next}>Continua <ArrowRight size={18}/></button> : <button type="submit" className="btn btn-primary" disabled={busy || rateLimitReached}>{busy ? 'Pubblicazione...' : 'Pubblica la serata'} <ArrowRight size={18}/></button>}</div>
       <p className="publish-note"><ShieldCheck size={16}/> Prima di pubblicare verifica che i dati siano corretti. L'indirizzo resta riservato.</p>
-    </form><aside className="create-aside"><div className="quota-panel"><span><Users size={20}/> PIANO {pro ? 'PLUS' : 'FREE'}</span><h3>{pro ? 'Eventi illimitati' : `${myEventsThisMonth}/2 eventi questo mese`}</h3><div className="quota-track"><span style={{ width: `${pro ? 100 : Math.min(100, myEventsThisMonth / 2 * 100)}%` }}/></div><p>{pro ? 'Continua a far crescere la community.' : 'Puoi creare fino a 2 eventi al mese gratuitamente.'}</p>{!pro && <Link to="/plus">Scopri Organizzatore Plus <ArrowRight size={16}/></Link>}</div>{freeLimitReached && <div className="limit-note"><LockKeyhole size={18}/> Limite gratuito raggiunto. <Link to="/plus">Scopri Plus</Link>.</div>}</aside></div>
+    </form><aside className="create-aside"><div className="quota-panel"><span><Users size={20}/> GRATIS PER TUTTI</span><h3>La tua serata, senza abbonamenti</h3><p>Organizza tutte le occasioni che vuoi: per evitare spam, puoi pubblicare fino a 10 serate in 24 ore.</p><p className="free-quota-note">{myEventsToday} / 10 pubblicate nelle ultime 24 ore</p></div>{rateLimitReached && <div className="limit-note"><LockKeyhole size={18}/> Limite anti-spam raggiunto. Riprova più tardi.</div>}</aside></div>
   </div>;
 }

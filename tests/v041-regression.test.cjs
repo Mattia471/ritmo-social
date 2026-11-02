@@ -15,7 +15,7 @@ test('organizer approval respects capacity and pending state', () => {
   assert.match(store, /event\.hostId !== userId/);
   assert.match(store, /Capienza raggiunta: non puoi approvare altri partecipanti/);
 });
-test('sample organized event does not use one of two free slots', () => {
+test('demo sample event is excluded from the anti-spam rate limit', () => {
   assert.match(read('src/lib/store.tsx'), /e\.id !== 'own-1'/);
   assert.match(read('src/pages/CreateEvent.tsx'), /e\.id !== 'own-1'/);
 });

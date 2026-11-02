@@ -5,6 +5,7 @@ import { useStore } from '../lib/store';
 import { useGeo } from '../components/Layout';
 import { EventCard, EmptyState, distanceFrom } from '../components/Shared';
 import { ExploreMap } from '../components/ExploreMap';
+import { SponsorSlot } from '../components/SponsorSlot';
 import { CITY_AREAS, type Dance } from '../types';
 import { cityCenter, isUpcoming } from '../lib/geo';
 
@@ -41,7 +42,7 @@ export function Explore() {
     {locateError && <p className="form-error" role="status">{locateError}</p>}
     <div className="result-controls"><div><span className="result-count">{filtered.length}</span> <span className="result-text">{filtered.length === 1 ? 'serata trovata' : 'serate trovate'}</span><p><MapPin size={13}/> {location.name} · entro {radius} km circa</p></div><div className="view-switch"><button aria-label="Vista elenco" className={mode === 'list' ? 'current' : ''} onClick={() => setMode('list')}><ListIcon size={17}/>Lista</button><button aria-label="Vista mappa" className={mode === 'map' ? 'current' : ''} onClick={() => setMode('map')}><Map size={17}/>Mappa</button></div></div>
     {mode === 'map' && <><ExploreMap events={filtered} location={location} radius={radius}/><p className="map-mode-help">Puoi esplorare i pin, zoomare e aprire direttamente le schede. Le serate filtrate restano disponibili anche qui sotto.</p></>}
-    {filtered.length ? <div className={mode === 'map' ? 'map-result-list' : 'events-grid'}>{filtered.map(e => <EventCard event={e} distance={distanceFrom(e,location)} key={e.id}/>)}</div> : <EmptyState title="Qui la pista è ancora vuota" description="Prova ad aumentare il raggio o cambia i filtri. Oppure organizza tu una serata!" action="Crea un evento" href="/create"/>}
+    {filtered.length ? <div className={mode === 'map' ? 'map-result-list' : 'events-grid'}>{filtered.map((e, i) => <div className="explore-result-item" key={e.id}>{mode === 'list' && i === 8 && <SponsorSlot placement="explore"/>}<EventCard event={e} distance={distanceFrom(e,location)}/></div>)}</div> : <EmptyState title="Qui la pista è ancora vuota" description="Prova ad aumentare il raggio o cambia i filtri. Oppure organizza tu una serata!" action="Crea un evento" href="/create"/>}
     <p className="location-disclaimer"><MapPin size={15}/> Il raggio usa la zona approssimativa indicata dall'organizzatore. L'indirizzo preciso è visibile solo agli iscritti approvati.</p>
   </div>;
 }

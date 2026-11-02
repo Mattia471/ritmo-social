@@ -39,7 +39,7 @@ Scopri, organizza e vivi serate di bachata, salsa, kizomba e merengue, con un'es
 - **Frontend:** React 18, Vite 6, TypeScript, Tailwind CSS 3, React Router, Lucide.
 - **Mappe:** Leaflet + React Leaflet + OpenStreetMap, pin su **zone indicative** (non indirizzi di locali).
 - **Backend predisposto, ma non ancora convalidato in produzione:** Supabase Auth, PostgreSQL, Row Level Security, Realtime, Edge Functions.
-- **Pagamenti predisposti, non attivi nella demo:** Stripe Checkout / webhook.
+- **Accesso gratuito v0.5:** nessun checkout attivo, sponsor contestuali opzionali senza tracciamento.
 - **Deploy:** Vercel, SPA routing.
 
 ## 🚀 Avvio in locale
@@ -92,7 +92,7 @@ src/
   components/          # Layout, mappa, card e componenti condivisi
   data/                # Contenuti demo
   lib/                 # Store demo/live, geografia, client Supabase
-  pages/               # Esplora, evento, creazione, chat, profilo, Plus
+  pages/               # Esplora, evento, creazione, chat, profilo
 public/                # Logo, favicon, icone PWA, Open Graph
 supabase/
   migrations/          # Schema SQL / RLS da validare
@@ -109,9 +109,9 @@ Esegui `npm audit` e valuta gli aggiornamenti di dipendenze prima del rilascio: 
 
 ## 💸 Monetizzazione: accesso gratuito, sponsor contestuali
 
-Il prodotto è pensato per rendere **ricerca, iscrizioni e chat gratuite**. L'esperimento commerciale prioritario è la vendita di **serate sponsorizzate** e piccoli spazi pubblicitari locali, sempre contrassegnati come tali, evitando interruzioni in chat o durante un'iscrizione. Il prototipo conserva una schermata Plus a pagamento per analisi e confronti, **senza pagamenti attivi**.
+Il prodotto è pensato per rendere **ricerca, iscrizioni e chat gratuite**. L'esperimento commerciale prioritario è la vendita di **serate sponsorizzate** e piccoli spazi pubblicitari locali, sempre contrassegnati come tali, evitando interruzioni in chat o durante un'iscrizione. **Nessun abbonamento è offerto nella v0.5.** Gli sponsor sono predisposti ma invisibili finché non viene configurato un inserzionista reale.
 
-Vedi [Strategia di monetizzazione](docs/MONETIZATION.md) per stime, ipotesi e metriche da monitorare.
+Vedi [Novità v0.5](RELEASE_NOTES_v0.5.md) e [Strategia di monetizzazione](docs/MONETIZATION.md) per stime, ipotesi e metriche da monitorare.
 
 ## 🛣️ Roadmap
 

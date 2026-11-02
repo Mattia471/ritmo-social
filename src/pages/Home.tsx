@@ -5,6 +5,7 @@ import { useGeo } from '../components/Layout';
 import { useStore } from '../lib/store';
 import { isUpcoming } from '../lib/geo';
 import { useState } from 'react';
+import { SponsorSlot } from '../components/SponsorSlot';
 
 export function Home() {
   const { profile, events, isLive } = useStore();
@@ -27,6 +28,7 @@ export function Home() {
     <section className="home-section"><SectionHeading eyebrow="LA PISTA NON DORME" title="Le prossime serate" action="Esplora" href="/explore"/>
       {nearby.length ? <div className="events-grid">{nearby.slice(0, 4).map(e => <EventCard event={e} distance={distanceFrom(e,location)} key={e.id}/>)}</div> : <div className="inline-empty">Non trovi una serata? <Link to="/create">Creala tu.</Link></div>}
     </section>
+    <SponsorSlot placement="home"/>
     <section className="feature-strip"><div className="feature-art"><span>✳</span><Radio size={35}/></div><div><p className="eyebrow">IL BELLO DI RITMO</p><h2>Non serve arrivare in coppia.</h2><p>Trova serate, conosci la community e parti con il piede giusto. Il resto lo fa la musica.</p></div><Link to="/chats" className="round-arrow" aria-label="Vai alla community"><ArrowUpRight size={23}/></Link></section>
     <section className="home-action-grid"><Link to="/explore" className="action-tile"><Compass size={23}/><span><strong>Esplora la mappa</strong><small>Scopri cosa succede vicino a te</small></span><ArrowUpRight size={20}/></Link><Link to="/create" className="action-tile"><Plus size={23}/><span><strong>Organizza qualcosa</strong><small>Fai incontrare nuovi ballerini</small></span><ArrowUpRight size={20}/></Link></section>
     {!isLive && <p className="demo-hint"><Sparkles size={15}/> Stai esplorando dati dimostrativi. Puoi creare serate, inviare richieste e messaggi senza registrarti.</p>}

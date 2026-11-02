@@ -9,7 +9,7 @@ Sperimentare due flussi pubblicitari:
 1. **Annunci contestuali automatici sul sito**, esclusivamente nei punti a basso attrito (fra le card di Esplora o in sezioni informative); nessun banner sopra chat, input, modali di conferma o indirizzi riservati.
 2. **Eventi in evidenza e sponsor locali diretti** chiaramente segnalati con la dicitura “Sponsorizzato”. Ricerca del locale/dell'evento sempre pertinente, anche quando promossa.
 
-La schermata Organizzatore Plus resta **opzionale e disattivata nella demo**. Potrà essere introdotta solo se strumenti professionali come dashboard, esportazione partecipanti e gestione ricorrente dimostreranno di far risparmiare tempo o vendere più ingressi.
+Nella **v0.5 la schermata Organizzatore Plus è rimossa**: nessun abbonamento è acquistabile, anche per chi organizza. I futuri servizi professionali richiederanno una scelta di prodotto separata.
 
 ## Economics illustrativa, non previsioni
 

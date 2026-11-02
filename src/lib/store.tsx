@@ -20,7 +20,6 @@ export type AppStore = DemoState & {
   createEvent: (input: NewEventInput) => Promise<string>;
   sendMessage: (eventId: string | null, content: string) => Promise<void>;
   updateProfile: (name: string, city: string, bio: string) => Promise<void>;
-  startCheckout: () => Promise<void>;
   restartDemo: () => void;
 };
 
@@ -64,15 +63,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     optionalError(authErr);
     if (!user) { setUserId(null); setLoading(false); return; }
     setUserId(user.id);
-    const [eventsRes, profilesRes, membershipRes, messagesRes, venueRes, subscriptionRes] = await Promise.all([
+    const [eventsRes, profilesRes, membershipRes, messagesRes, venueRes] = await Promise.all([
       supabase.from('events').select('*').eq('status', 'published').order('starts_at', { ascending: true }),
       supabase.from('profiles').select('id, display_name, city, bio'),
       supabase.from('attendances').select('*').order('created_at', { ascending: false }),
       supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('event_private').select('event_id, address, directions'),
-      supabase.from('subscriptions').select('plan, status').eq('user_id', user.id).maybeSingle(),
     ]);
-    for (const res of [eventsRes, profilesRes, membershipRes, messagesRes, venueRes, subscriptionRes]) optionalError(res.error);
+    for (const res of [eventsRes, profilesRes, membershipRes, messagesRes, venueRes]) optionalError(res.error);
     const profiles = new Map<string, Record<string, unknown>>((profilesRes.data || []).map(p => [String(p.id), p as Record<string, unknown>]));
     const current = profiles.get(user.id);
     const name = String(current?.display_name || user.email?.split('@')[0] || 'Ballerino');
@@ -82,7 +80,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       messages: (messagesRes.data || []).map(m => toMessage(m, profiles.get(m.user_id))).reverse(),
       venues: (venueRes.data || []).map(v => ({ eventId: v.event_id as string, address: v.address as string, directions: v.directions as string })) as PrivateVenue[],
       profile: { id: user.id, name, initials: shortName(name), city: String(current?.city || 'Roma'), bio: String(current?.bio || '') },
-      pro: Boolean(subscriptionRes.data && ['active', 'trialing'].includes(subscriptionRes.data.status) && subscriptionRes.data.plan === 'organizer_plus'),
+      pro: false,
     });
     setLoading(false);
   }, []);
@@ -174,9 +172,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const createEvent = useCallback(async (input: NewEventInput): Promise<string> => {
     if (!userId) throw new Error('Devi accedere per creare un evento.');
     if (!supabase) {
-      const now = new Date();
-      const createdThisMonth = data.events.filter(e => e.hostId === userId && e.id !== 'own-1' && new Date(e.createdAt || e.startsAt).getMonth() === now.getMonth() && new Date(e.createdAt || e.startsAt).getFullYear() === now.getFullYear()).length;
-      if (!data.pro && createdThisMonth >= 2) throw new Error('Limite Free raggiunto: massimo 2 eventi creati al mese.');
+      const createdToday = data.events.filter(e => e.hostId === userId && e.id !== 'own-1' && new Date(e.createdAt || e.startsAt).getTime() > Date.now() - 24 * 60 * 60 * 1000).length;
+      if (createdToday >= 10) throw new Error('Limite anti-spam raggiunto: massimo 10 eventi in 24 ore.');
       const id = crypto.randomUUID();
       const { address, directions, ...publicEvent } = input;
       setData(s => ({ ...s, events: [{ ...publicEvent, id, hostId: userId, hostName: s.profile.name, approvedCount: 0, createdAt: new Date().toISOString() }, ...s.events], venues: [...s.venues, { eventId: id, address, directions }] }));
@@ -191,7 +188,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
       optionalError(createErr); await refresh(); return createdId as string;
     } catch (err) { return fail(err); }
-  }, [userId, data.events, data.pro, refresh, fail]);
+  }, [userId, data.events, refresh, fail]);
   const sendMessage = useCallback(async (eventId: string | null, content: string) => {
     const safeText = content.trim().slice(0, 1200);
     if (!safeText || !userId) return;
@@ -215,20 +212,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       optionalError(saveErr); await refresh();
     } catch (err) { fail(err); }
   }, [userId, refresh, fail]);
-  const startCheckout = useCallback(async () => {
-    if (!supabase) throw new Error('La demo non addebita denaro. Configura Supabase e Stripe per attivare il pagamento.');
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) throw new Error('Accedi per attivare il piano.');
-      const { data: result, error: fnErr } = await supabase.functions.invoke('create-checkout', { body: {} });
-      optionalError(fnErr);
-      if (!result?.url || !String(result.url).startsWith('https://checkout.stripe.com/')) throw new Error('Checkout non disponibile. Verifica la configurazione Stripe.');
-      window.location.assign(result.url);
-    } catch (err) { fail(err); }
-  }, [fail]);
   const restartDemo = useCallback(() => { if (supabase) return; resetDemo(); setData(initialDemo()); }, []);
 
-  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, startCheckout, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, startCheckout, restartDemo]);
+  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, restartDemo]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useStore = (): AppStore => {

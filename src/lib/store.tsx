@@ -46,7 +46,7 @@ const toMessage = (row: Record<string, unknown>, author: Record<string, unknown>
 });
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<DemoState>(() => { const saved = isLive ? initialDemo() : readDemo(); return { ...saved, profile: { ...saved.profile, dances: saved.profile.dances || [], yearsExperience: saved.profile.yearsExperience ?? 0 } }; });
+  const [data, setData] = useState<DemoState>(() => { const saved = isLive ? { ...initialDemo(), events: [], attendances: [], messages: [], venues: [], profile: { ...initialDemo().profile, name: 'Ballerino', initials: 'BA', dances: [], yearsExperience: 0 } } : readDemo(); return { ...saved, profile: { ...saved.profile, dances: saved.profile.dances || [], yearsExperience: saved.profile.yearsExperience ?? 0 } }; });
   const [userId, setUserId] = useState<string | null>(isLive ? null : 'me');
   const [loading, setLoading] = useState(isLive);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);

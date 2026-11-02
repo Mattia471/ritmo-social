@@ -6,7 +6,7 @@ import { CITY_AREAS, DANCE_CHOICES, type Dance, type SignupInput } from '../type
 
 type Mode = 'register' | 'login' | 'recover';
 export function Auth() {
-  const { signIn, signUp, resetPassword, pendingEmail } = useStore();
+  const { signIn, signUp, resetPassword, pendingEmail, isLive } = useStore();
   const [mode,setMode] = useState<Mode>('register');
   const [form,setForm] = useState<SignupInput>({firstName:'',lastName:'',phone:'',email:'',password:'',city:'Roma',dances:['Bachata'],yearsExperience:0});
   const [busy,setBusy] = useState(false);
@@ -27,7 +27,7 @@ export function Auth() {
     <div className="auth-content"><div className="auth-mobile-brand"><Brand/></div><div className="auth-panel">
       <span className="auth-glyph"><Heart size={26}/></span>
       {pendingEmail ? <><p className="eyebrow">CONTROLLA LA POSTA</p><h2>Controlla la tua email</h2><p>Abbiamo inviato le istruzioni a <strong>{pendingEmail}</strong>. Per confermare l'account o recuperare la password, segui il link ricevuto.</p><span className="auth-small"><Mail size={16}/> Controlla anche lo spam.</span></> : <>
-        <p className="eyebrow">DANCE · MEET · REPEAT</p><h2>{mode==='register' ? 'Entra nella community.' : mode==='login' ? 'Bentornato in pista.' : 'Recupera la password.'}</h2>
+        {!isLive && <p className="auth-preview-note" role="status">Anteprima grafica: nessun account reale viene creato finché non colleghiamo Supabase.</p>}<p className="eyebrow">DANCE · MEET · REPEAT</p><h2>{mode==='register' ? 'Entra nella community.' : mode==='login' ? 'Bentornato in pista.' : 'Recupera la password.'}</h2>
         <p>{mode==='register' ? 'Registrati gratis in pochi passi. Ti mostreremo per prime le serate vicine ai tuoi balli preferiti.' : mode==='login' ? 'Accedi con la tua email e password.' : 'Ti invieremo un link per impostare una nuova password.'}</p>
         <div className="auth-mode-tabs"><button type="button" aria-pressed={mode==='register'} onClick={()=>{setMode('register');setError('');}}>Registrati</button><button type="button" aria-pressed={mode==='login'} onClick={()=>{setMode('login');setError('');}}>Accedi</button></div>
         <form onSubmit={e=>void submit(e)} className="auth-register-form">

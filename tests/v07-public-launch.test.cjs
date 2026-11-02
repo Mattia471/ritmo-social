@@ -6,3 +6,4 @@ test('signup validates phone, styles and experience',()=>{const s=read('src/page
 test('Palermo and four launch cities have public area centers',()=>{const s=read('src/types.ts');for(const x of ['Roma','Milano','Napoli','Palermo'])assert.ok(s.includes(x));});
 test('Explore and Home use actual profile dance preferences',()=>{assert.match(read('src/pages/Explore.tsx'),/profile.dances/);assert.match(read('src/pages/Home.tsx'),/profile.dances/);});
 test('tracking analytics is in app; there are no ad-network calls without approved setup',()=>{assert.match(read('src/App.tsx'),/Analytics/);assert.match(read('.env.example'),/VITE_ADS_ENABLED=false/);});
+test('preview signup is explicitly a demo and live mode has no seeded fake events',()=>{assert.match(read('src/pages/Auth.tsx'),/Anteprima grafica/);assert.match(read('src/lib/store.tsx'),/events: \[\], attendances: \[\], messages: \[\], venues: \[\]/);});

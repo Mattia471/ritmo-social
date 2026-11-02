@@ -16,7 +16,7 @@ import { ResetPassword } from './pages/ResetPassword';
 function ScrollToTop() {
   const route = useLocation();
   useLayoutEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.querySelectorAll<HTMLElement>('.main-area, .page-content').forEach(node => { node.scrollTop = 0; });
   }, [route.pathname, route.search, route.key]);
@@ -35,6 +35,7 @@ function InsideApp() {
     <Route path="/chats/:roomId" element={<Chats/>}/>
     <Route path="/create" element={<CreateEvent/>}/>
     <Route path="/profile" element={<Profile/>}/>
+    {!import.meta.env.VITE_SUPABASE_URL && <Route path="/anteprima-iscrizione" element={<Auth/>}/>}
     <Route path="/reset-password" element={<ResetPassword/>}/>
     <Route path="/plus" element={<Navigate to="/create" replace/>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>

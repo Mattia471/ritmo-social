@@ -9,3 +9,5 @@
 - Sponsor cards still supported. No forced subscriptions or fake sponsor content.
 
 **Do not treat this as a production real user launch:** no dedicated Ritmo Social Supabase project has been provisioned or migrated; the only existing Supabase project belongs to Synchro Step. Do not use it. Need email delivery, privacy/legal terms, RLS audit, multi-account access tests, abuse and spam controls, HTTPS domain, AdSense approval, commercial hosting.
+
+- Demo preview available at `/anteprima-iscrizione`, clearly labeled not real signup; live mode never seeds fake events.

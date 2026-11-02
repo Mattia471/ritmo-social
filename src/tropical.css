@@ -316,3 +316,26 @@ small,.page-intro>p:last-child{color:var(--muted)}
 .adsense-slot{border:1px solid #345865;border-radius:18px;margin:22px 0;padding:12px;background:#092530;overflow:hidden}.adsense-disclosure{display:block;color:#a8c3c6;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:800;margin-bottom:8px}
 
 .auth-preview-note{background:#0e3943;border:1px solid #56bfc1;color:#d8ffff;padding:12px;border-radius:13px;font-size:12px;line-height:1.55}
+
+
+/* v0.7 cancellation lifecycle: clear event warnings without modal overlays. */
+.event-card-canceled .event-photo{filter:saturate(.55)}
+.event-card-canceled .photo-feature{background:#753b31;color:#fff0dc}
+.event-cancelled-banner{display:flex;align-items:flex-start;gap:13px;padding:17px 19px;margin:0 0 24px;border:1px solid #925b4a;background:linear-gradient(135deg,#4e2d2c,#2a2731);border-radius:16px;color:#fff0e7}
+.event-cancelled-banner>svg{flex:none;margin-top:2px;color:#ffbc9d}
+.event-cancelled-banner strong{font-size:16px;display:block;margin-bottom:6px}
+.event-cancelled-banner p{font-size:12px;line-height:1.7;color:#f1cdc7;margin:0}
+.cancelled-venue{background:#2b2830;border-color:#7f5551}
+.cancelled-venue .lock-pill{color:#ffbd9a}
+.cancel-event-control{margin-top:16px;padding-top:14px;border-top:1px solid #456c76}
+.cancel-event-open{border:0;background:none;color:#ffb8a5;text-decoration:underline;text-underline-offset:4px;cursor:pointer;padding:7px 0;font-size:12px;font-weight:800}
+.cancel-event-open:hover{color:#fff0d8}
+.cancel-event-confirm{padding:15px;background:#342b32;border:1px solid #925b4a;border-radius:12px}
+.cancel-event-confirm strong{font-size:13px;color:#fff2ed}
+.cancel-event-confirm p{font-size:11px;line-height:1.7;color:#f0c7bb;margin:8px 0 13px}
+.cancel-event-confirm>div{display:flex;gap:8px;flex-wrap:wrap}
+.cancel-event-confirm button{border:1px solid #a76556;color:#fff1ea;border-radius:10px;padding:9px 12px;font-size:11px;font-weight:800;cursor:pointer;background:#744036}
+.cancel-event-confirm button+button{background:transparent;border-color:#7c7276}
+.cancel-event-confirm button:disabled{opacity:.6;cursor:not-allowed}
+.event-cancelled-mobile{pointer-events:none;opacity:.88}
+@media(max-width:680px){.event-cancelled-banner{margin:0 0 17px;padding:13px}.event-cancelled-banner strong{font-size:14px}.event-cancelled-banner p{font-size:11px}.cancel-event-confirm button{flex:1}}

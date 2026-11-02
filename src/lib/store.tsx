@@ -20,6 +20,7 @@ export type AppStore = DemoState & {
   resolve: (attendanceId: string, status: 'approved' | 'rejected') => Promise<void>;
   simulateApproval: (eventId: string) => void;
   createEvent: (input: NewEventInput) => Promise<string>;
+  cancelEvent: (eventId: string) => Promise<void>;
   sendMessage: (eventId: string | null, content: string) => Promise<void>;
   reportMessage: (messageId: string, reason: 'spam' | 'harassment' | 'hate' | 'privacy' | 'other', note: string) => Promise<void>;
   loadChatMessages: (eventId: string | null) => Promise<void>;
@@ -50,6 +51,7 @@ const toEvent = (row: Record<string, unknown>, author: Record<string, unknown> |
   publicLat: Number(row.public_lat), publicLng: Number(row.public_lng), startsAt: String(row.starts_at), endsAt: String(row.ends_at),
   cover: String(row.cover_url || ''), dances: (row.dances as SpotEvent['dances']) || ['Bachata'], price: Number(row.price || 0),
   maxPeople: Number(row.max_people), approvedCount: Number(row.approved_count || 0), createdAt: String(row.created_at), featured: Boolean(row.featured),
+  status: row.status === 'canceled' ? 'canceled' : 'published',
 });
 const toAttendance = (row: Record<string, unknown>, author: Record<string, unknown> | undefined): Attendance => ({
   id: String(row.id), eventId: String(row.event_id), userId: String(row.user_id), userName: String(author?.display_name || 'Ballerino'),
@@ -94,7 +96,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!user) { setBlockedUsers([]); setUserId(null); setData(s => ({ ...s, ...emptyLiveChats() })); setLoading(false); return; }
     setUserId(user.id);
     const [eventsRes, profilesRes, membershipRes, venueRes, blocksRes] = await Promise.all([
-      supabase.from('events').select('*').eq('status', 'published').order('starts_at', { ascending: true }),
+      // Include cancelled events for hosts and existing participants (RLS filters access).
+      supabase.from('events').select('*').order('starts_at', { ascending: true }),
       supabase.from('profiles').select('id, display_name, city, bio, dances, years_experience'),
       supabase.from('attendances').select('*').order('created_at', { ascending: false }),
       supabase.from('event_private').select('event_id, address, directions'),
@@ -250,6 +253,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       optionalError(createErr); await refresh(); return createdId as string;
     } catch (err) { return fail(err); }
   }, [userId, data.events, refresh, fail]);
+  const cancelEvent = useCallback(async (eventId: string) => {
+    if (!userId) throw new Error('Accedi per annullare una serata.');
+    const event = data.events.find(e => e.id === eventId);
+    if (!event || event.hostId !== userId || event.status === 'canceled' || new Date(event.startsAt).getTime() <= Date.now()) {
+      throw new Error('Puoi annullare soltanto le tue serate future ancora pubblicate.');
+    }
+    if (!supabase) {
+      setData(s => ({
+        ...s,
+        events: s.events.map(e => e.id === eventId ? { ...e, status: 'canceled' as const } : e),
+        venues: s.venues.filter(v => v.eventId !== eventId),
+        messages: s.messages.filter(m => m.eventId !== eventId),
+      }));
+      return;
+    }
+    try {
+      const { error: cancelErr } = await supabase.rpc('cancel_social_event', { p_event_id: eventId });
+      optionalError(cancelErr);
+      setData(s => ({ ...s, messages: s.messages.filter(m => m.eventId !== eventId) }));
+      await refresh();
+    } catch (err) { fail(err); }
+  }, [userId, data.events, refresh, fail]);
+
   const loadChatMessages = useCallback(async (eventId: string | null) => {
     if (!supabase || !userId) return;
     const revision = sessionRevision.current;
@@ -342,7 +368,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [userId, refresh, fail]);
   const restartDemo = useCallback(() => { if (supabase) return; resetDemo(); setData(initialDemo()); }, []);
 
-  const value = useMemo<AppStore>(() => ({ ...data, blockedUsers, blockUser, unblockUser, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo }), [data, blockedUsers, blockUser, unblockUser, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo]);
+  const value = useMemo<AppStore>(() => ({ ...data, blockedUsers, blockUser, unblockUser, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, cancelEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo }), [data, blockedUsers, blockUser, unblockUser, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, cancelEvent, sendMessage, reportMessage, loadChatMessages, updateProfile, restartDemo]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useStore = (): AppStore => {

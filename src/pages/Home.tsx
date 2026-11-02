@@ -13,7 +13,7 @@ export function Home() {
   const { location, radius } = useGeo();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const nearby = events.filter(e => isUpcoming(e.startsAt) && distanceFrom(e, location) <= radius).sort((a,b) => {
+  const nearby = events.filter(e => e.status !== 'canceled' && isUpcoming(e.startsAt) && distanceFrom(e, location) <= radius).sort((a,b) => {
     const aMatch = a.dances.some(d => profile.dances?.includes(d));
     const bMatch = b.dances.some(d => profile.dances?.includes(d));
     return Number(bMatch) - Number(aMatch) || new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();

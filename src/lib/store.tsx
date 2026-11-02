@@ -21,6 +21,7 @@ export type AppStore = DemoState & {
   simulateApproval: (eventId: string) => void;
   createEvent: (input: NewEventInput) => Promise<string>;
   sendMessage: (eventId: string | null, content: string) => Promise<void>;
+  loadChatMessages: (eventId: string | null) => Promise<void>;
   updateProfile: (name: string, city: string, bio: string, dances?: Dance[], yearsExperience?: number) => Promise<void>;
   restartDemo: () => void;
 };
@@ -51,6 +52,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(isLive);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Live conversations are loaded per room. Avoid fetching every private room
+  // on each unrelated event/attendance refresh.
+  const emptyLiveChats = () => ({ events: [], attendances: [], messages: [], venues: [] });
   const fail = useCallback((err: unknown): never => {
     const message = err instanceof Error ? err.message : 'Si è verificato un errore. Riprova.';
     setError(message); throw new Error(message);
@@ -63,27 +67,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     optionalError(authErr);
-    if (!user) { setUserId(null); setLoading(false); return; }
+    if (!user) { setUserId(null); setData(s => ({ ...s, ...emptyLiveChats() })); setLoading(false); return; }
     setUserId(user.id);
-    const [eventsRes, profilesRes, membershipRes, messagesRes, venueRes] = await Promise.all([
+    const [eventsRes, profilesRes, membershipRes, venueRes] = await Promise.all([
       supabase.from('events').select('*').eq('status', 'published').order('starts_at', { ascending: true }),
       supabase.from('profiles').select('id, display_name, city, bio, dances, years_experience'),
       supabase.from('attendances').select('*').order('created_at', { ascending: false }),
-      supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('event_private').select('event_id, address, directions'),
     ]);
-    for (const res of [eventsRes, profilesRes, membershipRes, messagesRes, venueRes]) optionalError(res.error);
+    for (const res of [eventsRes, profilesRes, membershipRes, venueRes]) optionalError(res.error);
     const profiles = new Map<string, Record<string, unknown>>((profilesRes.data || []).map(p => [String(p.id), p as Record<string, unknown>]));
     const current = profiles.get(user.id);
     const name = String(current?.display_name || user.email?.split('@')[0] || 'Ballerino');
-    setData({
+    setData(s => ({
       events: (eventsRes.data || []).map(e => toEvent(e, profiles.get(e.host_id))),
       attendances: (membershipRes.data || []).map(a => toAttendance(a, profiles.get(a.user_id))),
-      messages: (messagesRes.data || []).map(m => toMessage(m, profiles.get(m.user_id))).reverse(),
+      messages: s.messages,
       venues: (venueRes.data || []).map(v => ({ eventId: v.event_id as string, address: v.address as string, directions: v.directions as string })) as PrivateVenue[],
       profile: { id: user.id, name, initials: shortName(name), city: String(current?.city || 'Roma'), bio: String(current?.bio || ''), dances: Array.isArray(current?.dances) ? current.dances as Dance[] : [], yearsExperience: Number(current?.years_experience || 0) },
       pro: false,
-    });
+    }));
     setLoading(false);
   }, []);
 
@@ -93,13 +96,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     void refresh().catch(err => { if (mounted) { setError(String(err.message)); setLoading(false); } });
     const { data: auth } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      if (!session) { setUserId(null); setLoading(false); return; }
+      if (!session) { setUserId(null); setData(s => ({ ...s, ...emptyLiveChats() })); setLoading(false); return; }
       // Defer queries outside the auth callback to prevent auth-client deadlocks.
       setTimeout(() => { if (mounted) void refresh().catch(err => setError(String(err.message))); }, 0);
     });
     const realtime = supabase.channel('ritmo-activity')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, () => { if (mounted) void refresh().catch(() => {}); })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => { if (mounted) void refresh().catch(() => {}); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => { if (mounted) void refresh().catch(() => {}); })
       .subscribe();
     return () => { mounted = false; auth.subscription.unsubscribe(); void supabase?.removeChannel(realtime); };
@@ -144,6 +146,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const { error: signErr } = await supabase.auth.signOut();
     if (signErr) fail(signErr);
     setUserId(null); setPendingEmail(null);
+    setData(s => ({ ...s, ...emptyLiveChats() }));
   }, [fail]);
 
   const join = useCallback(async (eventId: string) => {
@@ -218,15 +221,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       optionalError(createErr); await refresh(); return createdId as string;
     } catch (err) { return fail(err); }
   }, [userId, data.events, refresh, fail]);
+  const loadChatMessages = useCallback(async (eventId: string | null) => {
+    if (!supabase || !userId) return;
+    // The database enforces room membership with RLS. Load only the latest
+    // messages for the current conversation; never truncate across all rooms.
+    let query = supabase.from('chat_messages')
+      .select('id, event_id, user_id, content, created_at, author:profiles!chat_messages_user_id_fkey(display_name)')
+      .order('created_at', { ascending: false }).limit(100);
+    query = eventId === null ? query.is('event_id', null) : query.eq('event_id', eventId);
+    const { data: rows, error: loadErr } = await query;
+    optionalError(loadErr);
+    const loaded = (rows || []).map(row => toMessage(row, row.author as Record<string, unknown> | undefined)).reverse();
+    setData(s => ({
+      ...s,
+      messages: [...s.messages.filter(msg => msg.eventId !== eventId), ...loaded]
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    }));
+  }, [userId]);
+
   const sendMessage = useCallback(async (eventId: string | null, content: string) => {
     const safeText = content.trim().slice(0, 1200);
-    if (!safeText || !userId) return;
-    if (!supabase) { setData(s => ({ ...s, messages: [...s.messages, { id: crypto.randomUUID(), eventId, userId, userName: s.profile.name, content: safeText, createdAt: new Date().toISOString() }] })); return; }
+    if (!safeText) throw new Error('Scrivi un messaggio prima di inviarlo.');
+    if (!userId) throw new Error('Accedi per inviare un messaggio.');
+    if (!supabase) {
+      setData(s => ({ ...s, messages: [...s.messages, { id: crypto.randomUUID(), eventId, userId, userName: s.profile.name, content: safeText, createdAt: new Date().toISOString() }] }));
+      return;
+    }
     try {
-      const { error: sendErr } = await supabase.from('chat_messages').insert({ event_id: eventId, user_id: userId, content: safeText });
-      optionalError(sendErr); await refresh();
+      const { data: inserted, error: sendErr } = await supabase.from('chat_messages')
+        .insert({ event_id: eventId, user_id: userId, content: safeText })
+        .select('id, event_id, user_id, content, created_at').single();
+      optionalError(sendErr);
+      if (inserted) setData(s => ({
+        ...s,
+        messages: s.messages.some(msg => msg.id === inserted.id) ? s.messages : [...s.messages, toMessage(inserted, { display_name: s.profile.name })]
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      }));
     } catch (err) { fail(err); }
-  }, [userId, refresh, fail]);
+  }, [userId, fail]);
   const updateProfile = useCallback(async (name: string, city: string, bio: string, dances?: Dance[], yearsExperience?: number) => {
     const safeName = name.trim().slice(0, 64); if (!safeName) throw new Error('Inserisci un nome.');
     if (!supabase) {
@@ -243,7 +275,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [userId, refresh, fail]);
   const restartDemo = useCallback(() => { if (supabase) return; resetDemo(); setData(initialDemo()); }, []);
 
-  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, updateProfile, restartDemo]);
+  const value = useMemo<AppStore>(() => ({ ...data, isLive, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, loadChatMessages, updateProfile, restartDemo }), [data, loading, userId, pendingEmail, error, clearError, signIn, signUp, resetPassword, signOut, refresh, join, cancelJoin, resolve, simulateApproval, createEvent, sendMessage, loadChatMessages, updateProfile, restartDemo]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useStore = (): AppStore => {

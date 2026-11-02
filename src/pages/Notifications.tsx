@@ -51,9 +51,14 @@ export function NotificationsPage() {
   const capability = detectPushCapability();
   const deviceReady = pushEnabledOnDevice && preferences.push_enabled;
   const copySiteLink = () => {
-    void navigator.clipboard.writeText(window.location.origin + '/notifications')
+    const address = window.location.origin + '/notifications';
+    if (!navigator.clipboard?.writeText) {
+      setCopyState('Apri questo indirizzo direttamente in Safari: ' + address);
+      return;
+    }
+    void navigator.clipboard.writeText(address)
       .then(() => setCopyState('Link copiato. Incollalo nella barra degli indirizzi di Safari.'))
-      .catch(() => setCopyState('Apri la stessa pagina direttamente in Safari per installare Ritmo Social.'));
+      .catch(() => setCopyState('Apri questo indirizzo in Safari: ' + address));
   };
   const visible = tab === 'unread' ? notices.filter(n => !n.read_at) : notices;
   const run = async (fn: () => Promise<void>, action: string, success = '') => {

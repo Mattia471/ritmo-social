@@ -1,10 +1,11 @@
-import { ArrowRight, ArrowUpRight, Compass, MapPin, Plus, Radio, Search, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, CalendarDays, Compass, MapPin, Plus, Radio, Search, Sparkles, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { EventCard, SectionHeading, distanceFrom } from '../components/Shared';
 import { useGeo } from '../components/Layout';
 import { useStore } from '../lib/store';
 import { isUpcoming } from '../lib/geo';
 import { useState } from 'react';
+import { clock, tinyDate } from '../lib/geo';
 import { SponsorSlot } from '../components/SponsorSlot';
 
 export function Home() {
@@ -14,14 +15,22 @@ export function Home() {
   const [query, setQuery] = useState('');
   const nearby = events.filter(e => isUpcoming(e.startsAt) && distanceFrom(e, location) <= radius).sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
   const featured = [...nearby].sort((a,b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured))).slice(0,4);
+  const spotlight = featured[0];
   return <div className="home-page">
-    <div className="greeting"><div><p>HEY, {profile.name.split(' ')[0].toUpperCase()} <span className="wave">✳</span></p><h1>Pronto a <em>ballare?</em></h1></div><Link to="/my-events" className="people-count"><span className="people-orbit"><Users size={19}/></span><span><strong>{nearby.length}</strong><small>eventi vicino a te</small></span></Link></div>
-    <form className="quick-search" onSubmit={e => { e.preventDefault(); navigate(`/explore?q=${encodeURIComponent(query)}`); }}><Search size={21}/><input aria-label="Cerca eventi, generi o zone" placeholder="Cerca una serata, un genere, una zona..." value={query} onChange={e => setQuery(e.target.value)}/><button type="submit" aria-label="Cerca"><ArrowRight size={19}/></button></form>
-    <div className="location-line"><span><MapPin size={16}/> Nei dintorni di <strong>{location.name}</strong> <span className="location-radius">· {radius} km</span></span><Link to="/explore">Modifica <ArrowUpRight size={14}/></Link></div>
-    <section className="hero-section">
-      <div className="hero-visual" aria-hidden="true"/>
-      <div className="hero-content"><div className="hero-brow"><span className="pulse-dot"/> LA COMMUNITY DEL BALLO CARAIBICO</div><h2>La prossima<br/><span>serata?</span><br/>È qui.</h2><p>Scopri persone, musica e nuove connessioni. La pista ti sta aspettando.</p><Link className="btn btn-primary hero-action" to="/explore">Trova la tua serata <ArrowUpRight size={19}/></Link></div><span className="hero-sideword">DANCE · MEET · REPEAT</span>
+    <div className="greeting"><div><p>LA TUA COMMUNITY, IL TUO RITMO <span className="wave">✳</span></p><h1>Ciao <em>{profile.name.split(' ')[0]}!</em></h1></div><Link to="/my-events" className="people-count" aria-label={`${nearby.length} eventi entro ${radius} chilometri`}><span className="people-orbit"><Users size={19}/></span><span><strong>{nearby.length}</strong><small>serate vicine</small></span></Link></div>
+    <div className="home-welcome"><span className="home-welcome-icon">✦</span> Stasera il ritmo lo scegli tu. <span>Scopri dove si balla.</span></div>
+    <form className="quick-search" onSubmit={e => { e.preventDefault(); navigate(`/explore?q=${encodeURIComponent(query)}`); }}><Search size={21}/><input aria-label="Cerca eventi, generi o zone" placeholder="Cerca eventi, locali, stili di danza..." value={query} onChange={e => setQuery(e.target.value)}/><button type="submit" aria-label="Cerca"><ArrowRight size={19}/></button></form>
+    <div className="location-line"><span><MapPin size={16}/> Serate vicino a <strong>{location.name}</strong> <span className="location-radius">· {radius} km</span></span><Link to="/explore">Mappa <ArrowUpRight size={14}/></Link></div>
+    <section className="hero-section" aria-label={spotlight ? `Evento in evidenza: ${spotlight.title}` : 'Scopri Ritmo Social'}>
+      <div className="hero-visual" aria-hidden="true" style={spotlight ? { backgroundImage: `linear-gradient(90deg,rgba(5,17,22,.96) 0%,rgba(6,24,30,.77) 40%,rgba(5,17,22,.13) 100%),linear-gradient(0deg,rgba(2,16,21,.66),transparent 58%),url("${spotlight.cover}")` } : undefined}/>
+      <div className="hero-content"><div className="hero-brow"><span className="pulse-dot"/> {spotlight ? '✦ SERATA IN EVIDENZA' : 'DANCE · MEET · REPEAT'}</div>
+        <h2>{spotlight ? spotlight.title : <>La prossima<br/><span>serata?</span><br/>È qui.</>}</h2>
+        <p>{spotlight ? spotlight.dances.join('  ·  ') : 'Scopri persone, musica e nuove connessioni. La pista ti sta aspettando.'}</p>
+        {spotlight && <div className="hero-event-meta"><span><CalendarDays size={16}/>{tinyDate(spotlight.startsAt)} · {clock(spotlight.startsAt)}</span><span><MapPin size={16}/>{spotlight.area}, {spotlight.city}</span></div>}
+        <Link className="btn btn-primary hero-action" to={spotlight ? `/event/${spotlight.id}` : '/explore'}>{spotlight ? "Scopri l'evento" : 'Esplora le serate'} <ArrowUpRight size={19}/></Link>
+      </div><span className="hero-sideword">CARIBBEAN VIBES · RITMO SOCIAL</span>
     </section>
+    <div className="home-dance-shortcuts" aria-label="Esplora per stile di ballo"><span>Il tuo stile</span>{['Salsa','Bachata','Kizomba','Merengue'].map(dance => <Link key={dance} to={`/explore?dance=${encodeURIComponent(dance)}`}>{dance}<ArrowUpRight size={13}/></Link>)}</div>
     <section className="home-section"><SectionHeading eyebrow="✦ DA NON PERDERE" title="Serate in evidenza" action="Vedi tutte" href="/explore"/>
       {featured.length ? <div className="featured-scroller">{featured.map(e => <div className="featured-slide" key={e.id}><EventCard event={e} distance={distanceFrom(e,location)} horizontal/></div>)}</div> : <div className="inline-empty">Nessuna serata in questo raggio. <Link to="/explore">Prova ad allargare la ricerca.</Link></div>}
     </section>

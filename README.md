@@ -14,7 +14,7 @@ Scopri, organizza e vivi serate di bachata, salsa, kizomba e merengue, con un'es
 [![Vite](https://img.shields.io/badge/Vite-6-646cff?logo=vite&logoColor=white)](https://vite.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-06b6d4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Demo](https://img.shields.io/badge/Demo-Vercel-101124?logo=vercel)](https://ritmo-social-theta.vercel.app/)
-![Release](https://img.shields.io/badge/Release-v0.4.1-FF7196)
+![Release](https://img.shields.io/badge/Release-v0.6-18C8CE)
 
 [**Apri la demo**](https://ritmo-social-theta.vercel.app/) · [**Funzionalità**](#-cosa-puoi-fare) · [**Avvio locale**](#-avvio-in-locale) · [**Roadmap**](#-roadmap)
 
@@ -32,6 +32,8 @@ Scopri, organizza e vivi serate di bachata, salsa, kizomba e merengue, con un'es
 | Ricerca serate per stile, città, zona e distanza | Richiedi l'accesso a un evento e segui lo stato della richiesta | Crea eventi con un wizard mobile in 4 passaggi | Chat globale e chat legate agli eventi |
 | Esplora una mappa con pin, cluster e anteprime | Vedi il luogo preciso **solo dopo l'approvazione** nel modello previsto | Definisci capienza, orari, prezzi e zona pubblica | Profili personali con città, bio e stili preferiti |
 
+**Design v0.6:** tema Tropical After Dark con palette petrolio, turchese, sabbia e arancione. Home con evento in evidenza e filtri rapidi per genere, nuovo logo e tema PWA. Leggi [note v0.6](RELEASE_NOTES_v0.6.md).
+
 **Esperienza mobile-first:** navigazione inferiore, schede compatte, input ottimizzati per Safari iOS, chat con tastiera, data e ora separate, e pulsanti di partecipazione sempre accessibili.
 
 ## 🧩 Stack
@@ -39,7 +41,7 @@ Scopri, organizza e vivi serate di bachata, salsa, kizomba e merengue, con un'es
 - **Frontend:** React 18, Vite 6, TypeScript, Tailwind CSS 3, React Router, Lucide.
 - **Mappe:** Leaflet + React Leaflet + OpenStreetMap, pin su **zone indicative** (non indirizzi di locali).
 - **Backend predisposto, ma non ancora convalidato in produzione:** Supabase Auth, PostgreSQL, Row Level Security, Realtime, Edge Functions.
-- **Accesso gratuito v0.5:** nessun checkout attivo, sponsor contestuali opzionali senza tracciamento.
+- **Accesso gratuito (da v0.5):** nessun checkout attivo, sponsor contestuali opzionali senza tracciamento.
 - **Deploy:** Vercel, SPA routing.
 
 ## 🚀 Avvio in locale
@@ -89,6 +91,7 @@ Prima di attivare Supabase live servono test multiaccount, conferme transazional
 ```text
 src/
   App.tsx              # Router e shell applicativa
+  tropical.css         # Tema v0.6, override dei soli elementi visivi
   components/          # Layout, mappa, card e componenti condivisi
   data/                # Contenuti demo
   lib/                 # Store demo/live, geografia, client Supabase
@@ -103,7 +106,7 @@ supabase/
 
 ## 🧪 Test e rilascio
 
-La v0.4.1 ha superato **24 test automatici** riportati nel collaudo della demo e una build TypeScript/Vite su Vercel. I flussi fondamentali sono stati verificati manualmente su iPhone nella modalità demo; questo non equivale a test end-to-end del backend con utenti reali.
+La v0.6 include **32 test automatici locali**. La v0.4.1 ha completato il collaudo manuale su iPhone; ogni nuova release richiede una nuova verifica UX. I flussi fondamentali sono stati verificati manualmente su iPhone nella modalità demo; questo non equivale a test end-to-end del backend con utenti reali.
 
 Esegui `npm audit` e valuta gli aggiornamenti di dipendenze prima del rilascio: durante la build v0.4.1 sono state segnalate **6 vulnerabilità (1 moderata, 5 alte)**. Completa moderazione delle chat, antispam, documentazione privacy e sicurezza RLS prima di aprire l'app al pubblico.
 

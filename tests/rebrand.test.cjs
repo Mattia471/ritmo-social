@@ -15,7 +15,7 @@ test('brand: logo, favicon, PWA e OpenGraph installati', () => {
   assert.match(html, /property="og:image"/);
   assert.match(html, /name="twitter:card"/);
   assert.match(html, /rel="manifest"/);
-  assert.equal(manifest.theme_color,'#101027');
+  assert.equal(manifest.theme_color,'#071923');
 });
 test('geo map: pins are selectable, with preview and styles, and show only public coordinates', () => {
   const map = read('src/components/ExploreMap.tsx');

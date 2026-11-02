@@ -15,7 +15,7 @@ export function Explore() {
   const { location, setLocation, radius, setRadius } = useGeo();
   const [params] = useSearchParams();
   const [query, setQuery] = useState(params.get('q') || '');
-  const [dance, setDance] = useState<'Tutte' | Dance>('Tutte');
+  const [dance, setDance] = useState<'Tutte' | Dance>(() => dances.find(d => d === params.get('dance')) || 'Tutte');
   const [mode, setMode] = useState<'list' | 'map'>(params.get('view') === 'list' ? 'list' : 'map');
   const [onlyFree, setOnlyFree] = useState(false);
   const [showFilters, setShowFilters] = useState(false);

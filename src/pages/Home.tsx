@@ -1,8 +1,9 @@
-import { ArrowRight, ArrowUpRight, CalendarDays, Compass, MapPin, Plus, Radio, Search, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Bell, CalendarDays, Compass, MapPin, Plus, Radio, Search, Sparkles, Users, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { EventCard, SectionHeading, distanceFrom } from '../components/Shared';
 import { useGeo } from '../components/Layout';
 import { useStore } from '../lib/store';
+import { useNotifications } from '../lib/notifications';
 import { isUpcoming } from '../lib/geo';
 import { useState } from 'react';
 import { clock, tinyDate } from '../lib/geo';
@@ -10,6 +11,8 @@ import { SponsorSlot } from '../components/SponsorSlot';
 
 export function Home() {
   const { profile, events, isLive } = useStore();
+  const { pushEnabledOnDevice, preferences } = useNotifications();
+  const [dismissedPushHint, setDismissedPushHint] = useState(() => { try { return localStorage.getItem('ritmo-push-hint-hidden') === '1'; } catch { return false; } });
   const { location, radius } = useGeo();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -23,6 +26,12 @@ export function Home() {
   return <div className="home-page">
     <div className="greeting"><div><p>LA TUA COMMUNITY, IL TUO RITMO <span className="wave">✳</span></p><h1>Ciao <em>{profile.name.split(' ')[0]}!</em></h1></div><Link to="/my-events" className="people-count" aria-label={`${nearby.length} eventi entro ${radius} chilometri`}><span className="people-orbit"><Users size={19}/></span><span><strong>{nearby.length}</strong><small>serate vicine</small></span></Link></div>
     <div className="home-welcome"><span className="home-welcome-icon">✦</span> Stasera il ritmo lo scegli tu. <span>Scopri dove si balla.</span></div>
+    {isLive && !dismissedPushHint && !(pushEnabledOnDevice && preferences.push_enabled) && <section className="home-push-hint" aria-label="Invito alle notifiche">
+      <span className="home-push-hint-icon"><Bell size={19}/></span>
+      <div><strong>Vuoi sapere quando arriva una serata vicino a te?</strong><p>Attiva gli avvisi su Ritmo Social. Su iPhone trovi anche i passaggi per installare l'app.</p></div>
+      <Link to="/notifications" className="home-push-hint-action">Attiva <ArrowUpRight size={16}/></Link>
+      <button type="button" aria-label="Non mostrare più questo avviso" className="home-push-hint-dismiss" onClick={() => { setDismissedPushHint(true); try { localStorage.setItem('ritmo-push-hint-hidden', '1'); } catch { /* Dismiss for this view only */ } }}><X size={16}/></button>
+    </section>
     <form className="quick-search" onSubmit={e => { e.preventDefault(); navigate(`/explore?q=${encodeURIComponent(query)}`); }}><Search size={21}/><input aria-label="Cerca eventi, generi o zone" placeholder="Cerca eventi, locali, stili di danza..." value={query} onChange={e => setQuery(e.target.value)}/><button type="submit" aria-label="Cerca"><ArrowRight size={19}/></button></form>
     <div className="location-line"><span><MapPin size={16}/> Serate vicino a <strong>{location.name}</strong> <span className="location-radius">· {radius} km</span></span><Link to="/explore">Mappa <ArrowUpRight size={14}/></Link></div>
     <section className="hero-section" aria-label={spotlight ? `Evento in evidenza: ${spotlight.title}` : 'Scopri Ritmo Social'}>

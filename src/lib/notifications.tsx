@@ -196,11 +196,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         await subscription.unsubscribe();
       }
     }
+    // Disabling this browser must not disable another authorized device.
+    const { data: otherDevices, error: remainingError } = await supabase.from('push_subscriptions')
+      .select('id').eq('user_id', userId).limit(1);
+    if (remainingError) throw new Error(remainingError.message);
+    const othersRemain = Boolean(otherDevices?.length);
     const { error: settingError } = await supabase.from('notification_preferences')
-      .update({ push_enabled: false }).eq('user_id', userId);
+      .update({ push_enabled: othersRemain }).eq('user_id', userId);
     if (settingError) throw new Error(settingError.message);
     if (currentUser.current === userId) {
-      setPreferences(previous => ({ ...previous, push_enabled: false }));
+      setPreferences(previous => ({ ...previous, push_enabled: othersRemain }));
       setDevicePush(false);
     }
   }, [userId]);

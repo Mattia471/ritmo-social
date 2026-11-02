@@ -339,3 +339,15 @@ small,.page-intro>p:last-child{color:var(--muted)}
 .cancel-event-confirm button:disabled{opacity:.6;cursor:not-allowed}
 .event-cancelled-mobile{pointer-events:none;opacity:.88}
 @media(max-width:680px){.event-cancelled-banner{margin:0 0 17px;padding:13px}.event-cancelled-banner strong{font-size:14px}.event-cancelled-banner p{font-size:11px}.cancel-event-confirm button{flex:1}}
+
+
+/* Non-intrusive Home entry to the opt-in Web Push setup. */
+.home-push-hint{display:flex;align-items:center;gap:12px;margin:13px 0 20px;padding:12px 14px;border:1px solid #39786f;border-radius:15px;background:#163942;color:#e4faf2}
+.home-push-hint-icon{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:12px;background:#2a665d;color:#b9f9d3}
+.home-push-hint>div{flex:1;min-width:0}
+.home-push-hint strong{font-size:12px;line-height:1.4;display:block}
+.home-push-hint p{font-size:11px;line-height:1.5;color:#acd6c9;margin:4px 0 0}
+.home-push-hint-action{display:flex;align-items:center;gap:4px;flex:none;padding:9px 12px;border-radius:10px;background:#84e5b4;color:#0b3034;font-size:11px;font-weight:900}
+.home-push-hint-dismiss{display:grid;place-items:center;flex:none;width:27px;height:27px;border:0;background:transparent;color:#a1c7c3}
+.home-push-hint-dismiss:hover{color:#fff}
+@media(max-width:680px){.home-push-hint{gap:9px;padding:11px}.home-push-hint-icon{width:33px;height:33px}.home-push-hint strong{font-size:11px}.home-push-hint p{font-size:10px}.home-push-hint-action{padding:9px;font-size:10px}.home-push-hint-dismiss{width:20px;height:25px}}

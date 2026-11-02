@@ -25,7 +25,7 @@ export function Explore() {
   const filtered = useMemo(() => events.filter(e => {
     const distance = distanceFrom(e, location);
     const search = `${e.title} ${e.area} ${e.city} ${e.dances.join(' ')} ${e.description}`.toLowerCase();
-    return isUpcoming(e.startsAt) && distance <= radius && (dance === 'Tutte' || e.dances.includes(dance)) && (!forMe || !profile.dances?.length || e.dances.some(d => profile.dances.includes(d))) && (!onlyFree || e.price === 0) && search.includes(query.trim().toLowerCase());
+    return e.status !== 'canceled' && isUpcoming(e.startsAt) && distance <= radius && (dance === 'Tutte' || e.dances.includes(dance)) && (!forMe || !profile.dances?.length || e.dances.some(d => profile.dances.includes(d))) && (!onlyFree || e.price === 0) && search.includes(query.trim().toLowerCase());
   }).sort((a,b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()), [events, location, radius, dance, onlyFree, query, forMe, profile.dances]);
   const locateMe = () => {
     if (!navigator.geolocation) { setLocateError('Il browser non supporta la geolocalizzazione. Seleziona una città.'); return; }

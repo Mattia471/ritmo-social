@@ -192,8 +192,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       if (subscription) {
         const { error: deleteError } = await supabase.from('push_subscriptions')
           .delete().eq('endpoint', subscription.endpoint).eq('user_id', userId);
+        // If the database is offline, still revoke this browser endpoint locally
+        // so push payloads for the old account cannot reach a shared device.
+        const unsubscribed = await subscription.unsubscribe();
         if (deleteError) throw new Error(deleteError.message);
-        await subscription.unsubscribe();
+        if (!unsubscribed) throw new Error('Impossibile disattivare la registrazione sul dispositivo.');
       }
     }
     // Disabling this browser must not disable another authorized device.

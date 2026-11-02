@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Circle, CircleMarker, MapContainer, Marker, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import { divIcon, type LatLngExpression } from 'leaflet';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, CalendarDays, LockKeyhole, MapPin, X } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, Info, LockKeyhole, MapPin, X } from 'lucide-react';
 import { clock, tinyDate } from '../lib/geo';
 import type { Dance, SpotEvent, UserLocation } from '../types';
 
@@ -75,7 +75,6 @@ function EventMarkers({ events, zoom, activeIds, onSelect }: {
         if (cluster && zoom < 14) map.flyTo(center, Math.min(14, zoom + 2), { duration: .4 });
       },
     }}>
-      <Tooltip offset={[0, -40]} direction="top">{cluster ? `${grouped.length} serate in questa zona` : `${first.title} · ${first.area}`}</Tooltip>
     </Marker>;
   })}</>;
 }
@@ -83,6 +82,7 @@ function EventMarkers({ events, zoom, activeIds, onSelect }: {
 export function ExploreMap({ events, location, radius }: { events: SpotEvent[]; location: UserLocation; radius: number }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [zoom, setZoom] = useState(12);
+  const [showPrivacyInfo, setShowPrivacyInfo] = useState(false);
   const selected = useMemo(() => selectedIds.map(id => events.find(e => e.id === id)).filter((e): e is SpotEvent => !!e), [events, selectedIds]);
   useEffect(() => setSelectedIds([]), [location.lat, location.lng, radius]);
   const center: LatLngExpression = [location.lat, location.lng];
@@ -94,7 +94,7 @@ export function ExploreMap({ events, location, radius }: { events: SpotEvent[]; 
         <FollowSearch location={location} radius={radius}/>
         <ZoomObserver onZoom={setZoom}/>
         <ZoomControl position="topright"/>
-        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" maxZoom={19}/>
+        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19}/>
         <Circle center={center} radius={radius * 1000} pathOptions={{ color: '#9567ed', weight: 2, fillColor: '#a274ed', fillOpacity: .07, dashArray: '5 6' }}/>
         <CircleMarker center={center} radius={7} pathOptions={{ color: '#fff', fillColor: '#645dff', fillOpacity: 1, weight: 3 }}><Tooltip>Centro della tua ricerca</Tooltip></CircleMarker>
         <EventMarkers events={events} zoom={zoom} activeIds={selectedIds} onSelect={list => setSelectedIds(list.map(e => e.id))}/>
@@ -108,7 +108,7 @@ export function ExploreMap({ events, location, radius }: { events: SpotEvent[]; 
           <ArrowUpRight className="arrow" size={21}/>
         </Link>)}</div>
       </div>}
-      <div className="map-note"><LockKeyhole size={15}/><span>Posizioni indicative. L'indirizzo esatto si sblocca solo dopo l'approvazione.</span></div>
+      <div className="map-privacy-wrap"><button type="button" className="map-privacy-button" aria-expanded={showPrivacyInfo} onClick={() => setShowPrivacyInfo(x => !x)}><LockKeyhole size={14}/> Posizioni indicative <Info size={14}/></button>{showPrivacyInfo && <div className="map-privacy-details" role="status">Il pin indica solo la zona della serata. L'indirizzo preciso si sblocca dopo l'approvazione.</div>}</div>
     </div>
   </>;
 }

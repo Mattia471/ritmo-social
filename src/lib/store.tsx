@@ -164,7 +164,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const createdThisMonth = data.events.filter(e => e.hostId === userId && new Date(e.createdAt || e.startsAt).getMonth() === now.getMonth() && new Date(e.createdAt || e.startsAt).getFullYear() === now.getFullYear()).length;
       if (!data.pro && createdThisMonth >= 2) throw new Error('Limite Free raggiunto: massimo 2 eventi creati al mese.');
       const id = crypto.randomUUID();
-      setData(s => ({ ...s, events: [{ ...input, id, hostId: userId, hostName: s.profile.name, approvedCount: 0, createdAt: new Date().toISOString() }, ...s.events], venues: [...s.venues, { eventId: id, address: input.address, directions: input.directions }] }));
+      const { address, directions, ...publicEvent } = input;
+      setData(s => ({ ...s, events: [{ ...publicEvent, id, hostId: userId, hostName: s.profile.name, approvedCount: 0, createdAt: new Date().toISOString() }, ...s.events], venues: [...s.venues, { eventId: id, address, directions }] }));
       return id;
     }
     try {

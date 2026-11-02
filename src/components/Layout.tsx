@@ -20,9 +20,10 @@ const Header = () => {
   const pathname = useLocation().pathname;
   const titles: Record<string, string> = { '/explore': 'Esplora eventi', '/chats': 'Community', '/my-events': 'I tuoi eventi', '/profile': 'Il tuo profilo', '/create': 'Nuova serata', '/plus': 'Organizzatore Plus' };
   const isRoot = pathname === '/';
+  const chatRoom = pathname.startsWith('/chats/');
   return <header className="topbar">
     <div className="topbar-desktop"><Brand/><span className="topbar-location"><MapPin size={15}/>{location.name} <span>· {radius} km</span></span></div>
-    <div className="topbar-mobile">{isRoot ? <Brand/> : <><Link to="/" className="back-mobile" aria-label="Torna alla home"><ArrowLeft size={20}/></Link><span className="page-label">{titles[pathname] || 'Ritmo Social'}</span></> }</div>
+    <div className="topbar-mobile">{isRoot ? <Brand/> : <><Link to={chatRoom ? "/chats" : "/"} className="back-mobile" aria-label={chatRoom ? "Torna alle chat" : "Torna alla home"}><ArrowLeft size={20}/></Link><span className="page-label">{titles[pathname] || 'Ritmo Social'}</span></> }</div>
     <div className="topbar-actions"><span className="demo-badge">{isLive ? 'LIVE' : 'DEMO'}</span>{pro && <Crown className="premium-crown" size={17}/>}<Link to="/my-events" className="icon-button desktop-icon" title="Le tue richieste"><Bell size={19}/></Link><Link to="/profile" title="Profilo" className="profile-link"><Avatar name={profile.name} size="sm"/></Link></div>
   </header>;
 };

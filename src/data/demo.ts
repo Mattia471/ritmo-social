@@ -61,7 +61,12 @@ const KEY = 'ritmo-social-demo-v1';
 export const readDemo = (): DemoState => {
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as DemoState;
+    if (raw) {
+      const parsed = JSON.parse(raw) as DemoState;
+      // Migrate old demo snapshots that embedded the private address in public event objects.
+      parsed.events = (parsed.events || []).map(event => { const publicEvent = { ...event } as SpotEvent & { address?: string; directions?: string }; delete publicEvent.address; delete publicEvent.directions; return publicEvent; });
+      return parsed;
+    }
   } catch { /* Storage disabled: ephemeral demo */ }
   return initialDemo();
 };

@@ -21,7 +21,7 @@ export function EventDetail() {
   const distance = distanceKm({ lat: event.publicLat, lng: event.publicLng }, location);
   const action = async () => { setBusy(true); try { if (attendance) await cancelJoin(event.id); else await join(event.id); } catch { /* shown in global error */ } finally { setBusy(false); } };
   return <div className="detail-page">
-    <button className="sub-back" onClick={() => navigate(-1)}><ArrowLeft size={18}/> Torna indietro</button>
+    <button className="sub-back detail-back" onClick={() => navigate(-1)}><ArrowLeft size={18}/> Torna indietro</button>
     <div className="detail-cover" style={{ backgroundImage: `linear-gradient(0deg, rgba(11,10,15,.91), rgba(11,10,15,.03) 75%), url("${event.cover}")` }}><div className="detail-cover-label">{event.dances.map(d => <Pill key={d} tone="lime">{d}</Pill>)}</div><div className="detail-cover-footer"><span className="big-event-date"><strong>{new Date(event.startsAt).getDate()}</strong><small>{new Intl.DateTimeFormat('it-IT',{ month: 'short' }).format(new Date(event.startsAt))}</small></span><span className="detail-cover-label2">MEET. DANCE. REPEAT.</span></div></div>
     <div className="detail-grid"><div className="detail-primary">
       <div className="detail-title-row"><div><p className="eyebrow">RITMO SOCIAL EVENT</p><h1>{event.title}</h1></div><span className="price-bubble">{event.price === 0 ? 'GRATIS' : `€ ${event.price}`}</span></div>

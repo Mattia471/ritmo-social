@@ -15,12 +15,12 @@ export function Home() {
   const featured = [...nearby].sort((a,b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured))).slice(0,4);
   return <div className="home-page">
     <div className="greeting"><div><p>HEY, {profile.name.split(' ')[0].toUpperCase()} <span className="wave">✳</span></p><h1>Pronto a <em>ballare?</em></h1></div><Link to="/my-events" className="people-count"><span className="people-orbit"><Users size={19}/></span><span><strong>{nearby.length}</strong><small>eventi vicino a te</small></span></Link></div>
+    <form className="quick-search" onSubmit={e => { e.preventDefault(); navigate(`/explore?q=${encodeURIComponent(query)}`); }}><Search size={21}/><input aria-label="Cerca eventi, generi o zone" placeholder="Cerca una serata, un genere, una zona..." value={query} onChange={e => setQuery(e.target.value)}/><button type="submit" aria-label="Cerca"><ArrowRight size={19}/></button></form>
+    <div className="location-line"><span><MapPin size={16}/> Nei dintorni di <strong>{location.name}</strong> <span className="location-radius">· {radius} km</span></span><Link to="/explore">Modifica <ArrowUpRight size={14}/></Link></div>
     <section className="hero-section">
       <div className="hero-visual" aria-hidden="true"/>
       <div className="hero-content"><div className="hero-brow"><span className="pulse-dot"/> LA COMMUNITY DEL BALLO CARAIBICO</div><h2>La prossima<br/><span>serata?</span><br/>È qui.</h2><p>Scopri persone, musica e nuove connessioni. La pista ti sta aspettando.</p><Link className="btn btn-primary hero-action" to="/explore">Trova la tua serata <ArrowUpRight size={19}/></Link></div><span className="hero-sideword">DANCE · MEET · REPEAT</span>
     </section>
-    <form className="quick-search" onSubmit={e => { e.preventDefault(); navigate(`/explore?q=${encodeURIComponent(query)}`); }}><Search size={21}/><input aria-label="Cerca eventi, generi o zone" placeholder="Cerca una serata, un genere, una zona..." value={query} onChange={e => setQuery(e.target.value)}/><button type="submit" aria-label="Cerca"><ArrowRight size={19}/></button></form>
-    <div className="location-line"><span><MapPin size={16}/> Nei dintorni di <strong>{location.name}</strong> <span className="location-radius">· {radius} km</span></span><Link to="/explore">Modifica <ArrowUpRight size={14}/></Link></div>
     <section className="home-section"><SectionHeading eyebrow="✦ DA NON PERDERE" title="Serate in evidenza" action="Vedi tutte" href="/explore"/>
       {featured.length ? <div className="featured-scroller">{featured.map(e => <div className="featured-slide" key={e.id}><EventCard event={e} distance={distanceFrom(e,location)} horizontal/></div>)}</div> : <div className="inline-empty">Nessuna serata in questo raggio. <Link to="/explore">Prova ad allargare la ricerca.</Link></div>}
     </section>

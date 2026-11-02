@@ -173,3 +173,74 @@ h1,h2,h3{letter-spacing:-.6px} h1 em,h2 em{color:#ff9ab6}
   }
   .create-form .event-date-group .form-label { margin-top: 8px; }
 }
+
+
+/* Ritmo Social v0.3 · Guided mobile UX improvements */
+.mobile-chat-index,.chat-mobile-back{display:none}
+.map-privacy-wrap{position:absolute;left:10px;top:11px;z-index:650;max-width:calc(100% - 84px)}
+.map-privacy-button{display:inline-flex;align-items:center;gap:6px;border:1px solid #bfa6cb;background:#201837f0;color:#fff;font-size:11px;font-weight:750;border-radius:999px;padding:9px 11px;box-shadow:0 5px 14px #18132b44}
+.map-privacy-details{background:#201837f7;color:#fff;font-size:12px;line-height:1.5;padding:11px;border-radius:11px;margin-top:6px;border:1px solid #684a84;box-shadow:0 6px 20px #0005}
+.explore-map .leaflet-control-attribution{background:#ffffffed!important;color:#34303a!important;font-size:10px!important;padding:2px 4px!important}
+.explore-map .leaflet-control-attribution a{color:#194c91!important}
+.explore-map .leaflet-bottom.leaflet-right{z-index:660}
+@media(max-width:680px){
+  .page-content{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+  .bottom-link{color:#b5a9c8}
+  .bottom-link span{font-size:10px}
+  .home-page .greeting{margin-bottom:13px}
+  .home-page .greeting h1{font-size:25px}
+  .home-page .quick-search{height:52px;margin:14px 0 8px;background:#272043}
+  .home-page .location-line{margin:0 0 14px;font-size:12px;flex-wrap:wrap}
+  .home-page .hero-section{min-height:258px;border-radius:18px}
+  .home-page .hero-content{padding:22px;max-width:100%}
+  .home-page .hero-content h2{font-size:clamp(36px,9vw,48px);letter-spacing:-2px;line-height:.96;margin:12px 0 9px}
+  .home-page .hero-brow{font-size:9px;letter-spacing:.6px}
+  .home-page .hero-content>p{font-size:12px;max-width:295px;margin-bottom:10px}
+  .home-page .hero-sideword{display:none}
+  .home-page .hero-action{font-size:12px;padding:10px 13px}
+  .map-control-row{margin-top:10px}
+  .explore-map{height:min(58dvh,470px);min-height:345px;margin-bottom:20px}
+  .map-privacy-button{font-size:10px;padding:7px 10px}
+  .map-selection{bottom:30px;left:9px;right:9px}
+  .map-selection-content{max-height:160px}
+  .map-preview-event{min-height:67px}
+  .map-legend{margin-bottom:10px}
+  .map-mode-help{margin:0 0 16px}
+  .chat-mobile-index .chat-intro,.chat-mobile-index .chat-layout,.chat-mobile-index .community-guidelines{display:none}
+  .chat-mobile-index .mobile-chat-index{display:block}
+  .chat-mobile-index .mobile-chat-index-title{padding:2px 0 15px}
+  .chat-mobile-index .mobile-chat-index-title h1{font-size:30px;margin:0 0 6px}
+  .chat-mobile-index .mobile-chat-index-title>p:last-child{color:#bcb1cc;font-size:13px}
+  .mobile-chat-rooms{display:grid;gap:10px}
+  .mobile-chat-room{display:flex;align-items:center;gap:13px;padding:15px 12px;border:1px solid #544064;background:#211b39;border-radius:17px;min-width:0}
+  .mobile-chat-room>svg{flex-shrink:0;color:#ff94b1}
+  .mobile-room-avatar{height:52px;width:52px;border-radius:15px;display:grid;place-items:center;color:#d9b8ff;background:#403056;flex-shrink:0}
+  .mobile-room-avatar.global{background:linear-gradient(130deg,#ff8a87,#d17cff);color:#211228}
+  .mobile-room-text{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+  .mobile-room-text strong{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mobile-room-text small{font-size:12px;line-height:1.4;color:#b4a6c9}
+  .mobile-chat-zero{border:1px dashed #453b58;border-radius:14px;padding:16px;color:#c8bbd4;font-size:12px;display:flex;gap:10px;align-items:center}
+  .mobile-chat-explore{display:flex;gap:7px;align-items:center;color:#ff95b5;font-size:13px;font-weight:750;margin-top:20px}
+  /* Dedicated conversation screen; only the message list scrolls */
+  .app-shell:has(.chat-mobile-conversation) .bottom-nav,
+  .app-shell:has(.chat-mobile-conversation) .app-footer{display:none}
+  .app-shell:has(.chat-mobile-conversation) .main-area{height:100dvh;min-height:0;overflow:hidden}
+  .app-shell:has(.chat-mobile-conversation) .topbar{height:60px;min-height:60px}
+  .app-shell:has(.chat-mobile-conversation) .chat-page-main{height:calc(100dvh - 60px);min-height:0;max-width:none;padding:0!important;overflow:hidden}
+  .chat-mobile-conversation{height:100%;min-height:0;display:flex;flex-direction:column}
+  .chat-mobile-conversation .chat-intro,.chat-mobile-conversation .chat-channels,.chat-mobile-conversation .community-guidelines{display:none}
+  .chat-mobile-conversation .chat-layout{flex:1;display:flex;flex-direction:column;height:100%;min-height:0;border:0;border-radius:0}
+  .chat-mobile-conversation .chat-conversation{height:100%;min-height:0}
+  .chat-mobile-conversation .conversation-heading{padding:10px 14px;min-height:64px}
+  .chat-mobile-conversation .chat-mobile-back{display:inline-flex;flex-shrink:0;align-items:center;color:#f8e8f6}
+  .chat-mobile-conversation .message-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:12px 15px 16px}
+  .chat-mobile-conversation .conversation-welcome{margin:5px auto 13px}
+  .chat-mobile-conversation .conversation-welcome h3{font-size:15px}
+  .chat-mobile-conversation .conversation-welcome p{font-size:12px}
+  .chat-mobile-conversation .chat-compose{flex-shrink:0;padding:10px 12px calc(12px + env(safe-area-inset-bottom));background:#201b36}
+  .chat-mobile-conversation .chat-compose input{min-height:48px;border-radius:14px;font-size:16px!important;padding:11px 14px}
+  .chat-mobile-conversation .chat-compose button{height:46px;width:46px;border-radius:13px}
+  .chat-mobile-conversation .message-bubble p{font-size:13px}
+  .chat-mobile-conversation .message-row{max-width:90%}
+  .detail-back{display:none}
+}

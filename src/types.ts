@@ -24,6 +24,7 @@ export type SpotEvent = {
   approvedCount: number;
   createdAt?: string;
   featured?: boolean;
+  status?: 'published' | 'canceled';
 };
 export type PrivateVenue = { eventId: string; address: string; directions: string };
 export type Attendance = { id: string; eventId: string; userId: string; userName: string; status: JoinStatus; createdAt: string };

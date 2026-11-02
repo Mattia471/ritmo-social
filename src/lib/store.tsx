@@ -231,7 +231,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     query = eventId === null ? query.is('event_id', null) : query.eq('event_id', eventId);
     const { data: rows, error: loadErr } = await query;
     optionalError(loadErr);
-    const loaded = (rows || []).map(row => toMessage(row, row.author as Record<string, unknown> | undefined)).reverse();
+    const loaded = (rows || []).map(row => {
+      const author = Array.isArray(row.author) ? row.author[0] : row.author;
+      return toMessage(row, author as Record<string, unknown> | undefined);
+    }).reverse();
     setData(s => ({
       ...s,
       messages: [...s.messages.filter(msg => msg.eventId !== eventId), ...loaded]

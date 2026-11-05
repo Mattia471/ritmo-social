@@ -15,7 +15,7 @@ const links = [
   { href: '/profile', label: 'Profilo', icon: UserRound },
 ];
 const Header = () => {
-  const { profile, isLive } = useStore();
+  const { profile, isLive, userId } = useStore();
   const { location, radius } = useGeo();
   const pathname = useLocation().pathname;
   const titles: Record<string, string> = { '/explore': 'Esplora eventi', '/chats': 'Community', '/my-events': 'I tuoi eventi', '/profile': 'Il tuo profilo', '/create': 'Nuova serata', '/plus': 'Crea la tua serata' };
@@ -24,7 +24,7 @@ const Header = () => {
   return <header className="topbar">
     <div className="topbar-desktop"><Brand/><span className="topbar-location"><MapPin size={15}/>{location.name} <span>· {radius} km</span></span></div>
     <div className="topbar-mobile">{isRoot ? <Brand/> : <><Link to={chatRoom ? "/chats" : "/"} className="back-mobile" aria-label={chatRoom ? "Torna alle chat" : "Torna alla home"}><ArrowLeft size={20}/></Link><span className="page-label">{titles[pathname] || 'Ritmo Social'}</span></> }</div>
-    <div className="topbar-actions"><span className="demo-badge">{isLive ? 'LIVE' : 'DEMO'}</span><Link to="/my-events" className="icon-button desktop-icon" title="Le tue richieste"><Bell size={19}/></Link><Link to="/profile" title="Profilo" className="profile-link"><Avatar name={profile.name} size="sm"/></Link></div>
+    <div className="topbar-actions"><span className="demo-badge">{isLive ? 'LIVE' : 'DEMO'}</span>{userId ? <><Link to="/my-events" className="icon-button desktop-icon" title="Le tue richieste"><Bell size={19}/></Link><Link to="/profile" title="Profilo" className="profile-link"><Avatar name={profile.name} size="sm"/></Link></> : <Link to="/auth" className="topbar-login">Accedi</Link>}</div>
   </header>;
 };
 function SideNav() {

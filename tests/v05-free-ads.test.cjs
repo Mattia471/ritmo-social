@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const read = name => fs.readFileSync(path.join(__dirname, '..', name), 'utf8');
 test('no subscription route, checkout or Plus calls-to-action', () => {
-  assert.match(read('src/App.tsx'), /path="\/plus" element={<Navigate to="\/create" replace\/>}/);
+  assert.match(read('src/App.tsx'), /path="\/plus" element={<RequireAuth><Navigate to="\/create" replace\/><\/RequireAuth>}/);
   for(const source of ['src/components/Layout.tsx','src/pages/Profile.tsx','src/pages/CreateEvent.tsx']) {
     assert.doesNotMatch(read(source), /to="\/plus"|Passa a Plus|Organizzatore Plus|Scegli Ritmo Plus/);
   }

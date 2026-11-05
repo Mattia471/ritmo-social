@@ -65,10 +65,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const user = session?.user ?? null;
     setUserId(user?.id ?? null);
 
-    const profileFields = user ? 'id, display_name, city, bio' : 'id, display_name';
     const [eventsRes, profilesRes] = await Promise.all([
       supabase.from('events').select('*').eq('status', 'published').order('starts_at', { ascending: true }),
-      supabase.from('profiles').select(profileFields),
+      supabase.from('profiles').select('id, display_name'),
     ]);
     for (const res of [eventsRes, profilesRes]) optionalError(res.error);
     const profiles = new Map<string, Record<string, unknown>>((profilesRes.data || []).map(p => [String(p.id), p as Record<string, unknown>]));
@@ -80,13 +79,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const [membershipRes, messagesRes, venueRes] = await Promise.all([
+    const [membershipRes, messagesRes, venueRes, currentProfileRes] = await Promise.all([
       supabase.from('attendances').select('*').order('created_at', { ascending: false }),
       supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('event_private').select('event_id, address, directions'),
+      supabase.from('profiles').select('id, display_name, city, bio').eq('id', user.id).maybeSingle(),
     ]);
-    for (const res of [membershipRes, messagesRes, venueRes]) optionalError(res.error);
-    const current = profiles.get(user.id);
+    for (const res of [membershipRes, messagesRes, venueRes, currentProfileRes]) optionalError(res.error);
+    const current = currentProfileRes.data as Record<string, unknown> | null;
     const name = String(current?.display_name || user.email?.split('@')[0] || 'Ballerino');
     setData({
       events: publicEvents,

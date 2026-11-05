@@ -362,3 +362,9 @@ h1,h2,h3{letter-spacing:-.6px} h1 em,h2 em{color:#ff9ab6}
 .explore-result-item>.sponsor-slot{grid-column:1/-1}
 .free-quota-note{font-size:12px;font-weight:700;color:#ffd3e4}
 @media(max-width:680px){.sponsor-slot{padding:14px;margin:18px 0}.sponsor-body{gap:12px}.sponsor-body strong{font-size:15px}.sponsor-body p{font-size:12px}.sponsor-body a{font-size:12px;padding:9px}.explore-result-item>.sponsor-slot{margin:6px 0 16px}}
+
+/* Guest discovery */
+.topbar-login{display:inline-flex;align-items:center;justify-content:center;border:1px solid #5a4a69;border-radius:10px;padding:9px 13px;font-size:11px;font-weight:900;color:#f8f4ff;transition:border-color .17s,background .17s,color .17s}.topbar-login:hover{border-color:var(--lime);background:#2b203c;color:var(--lime)}
+.guest-invite{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:18px 0 6px;padding:16px 18px;border:1px solid #3b3153;border-radius:16px;background:linear-gradient(135deg,#211d3b,#17162e)}.guest-invite-copy{display:flex;flex-direction:column;gap:4px}.guest-invite-copy strong{font-family:'Space Grotesk',sans-serif;font-size:15px}.guest-invite-copy span{color:var(--muted);font-size:12px;line-height:1.55;max-width:680px}.guest-invite .btn{padding:11px 14px;white-space:nowrap}
+.auth-explore-link{display:inline-flex;align-items:center;margin-bottom:22px;color:#b9b1c8;font-size:12px;font-weight:800}.auth-explore-link:hover{color:var(--lime)}
+@media(max-width:700px){.topbar-login{padding:8px 11px;font-size:10px}.guest-invite{align-items:flex-start;flex-direction:column}.guest-invite .btn{width:100%}}

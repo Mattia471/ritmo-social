@@ -9,7 +9,7 @@ import { clock, tinyDate } from '../lib/geo';
 import { SponsorSlot } from '../components/SponsorSlot';
 
 export function Home() {
-  const { profile, events, isLive } = useStore();
+  const { profile, events, isLive, userId } = useStore();
   const { location, radius } = useGeo();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -17,8 +17,9 @@ export function Home() {
   const featured = [...nearby].sort((a,b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured))).slice(0,4);
   const spotlight = featured[0];
   return <div className="home-page">
-    <div className="greeting"><div><p>LA TUA COMMUNITY, IL TUO RITMO <span className="wave">✳</span></p><h1>Ciao <em>{profile.name.split(' ')[0]}!</em></h1></div><Link to="/my-events" className="people-count" aria-label={`${nearby.length} eventi entro ${radius} chilometri`}><span className="people-orbit"><Users size={19}/></span><span><strong>{nearby.length}</strong><small>serate vicine</small></span></Link></div>
+    <div className="greeting"><div><p>LA TUA COMMUNITY, IL TUO RITMO <span className="wave">✳</span></p><h1>{userId ? <>Ciao <em>{profile.name.split(' ')[0]}!</em></> : <>Scopri il tuo <em>prossimo ritmo.</em></>}</h1></div><Link to={userId ? "/my-events" : "/explore"} className="people-count" aria-label={`${nearby.length} eventi entro ${radius} chilometri`}><span className="people-orbit"><Users size={19}/></span><span><strong>{nearby.length}</strong><small>serate vicine</small></span></Link></div>
     <div className="home-welcome"><span className="home-welcome-icon">✦</span> Stasera il ritmo lo scegli tu. <span>Scopri dove si balla.</span></div>
+    {!userId && <div className="guest-invite"><div className="guest-invite-copy"><strong>Esplora Ritmo senza registrarti.</strong><span>Guarda serate, zone e stili. Ti chiederemo di accedere solo quando vorrai partecipare, scrivere o creare un evento.</span></div><Link to="/auth" className="btn btn-outline">Accedi o registrati <ArrowUpRight size={17}/></Link></div>}
     <form className="quick-search" onSubmit={e => { e.preventDefault(); navigate(`/explore?q=${encodeURIComponent(query)}`); }}><Search size={21}/><input aria-label="Cerca eventi, generi o zone" placeholder="Cerca eventi, locali, stili di danza..." value={query} onChange={e => setQuery(e.target.value)}/><button type="submit" aria-label="Cerca"><ArrowRight size={19}/></button></form>
     <div className="location-line"><span><MapPin size={16}/> Serate vicino a <strong>{location.name}</strong> <span className="location-radius">· {radius} km</span></span><Link to="/explore">Mappa <ArrowUpRight size={14}/></Link></div>
     <section className="hero-section" aria-label={spotlight ? `Evento in evidenza: ${spotlight.title}` : 'Scopri Ritmo Social'}>

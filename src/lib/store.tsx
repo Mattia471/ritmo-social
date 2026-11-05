@@ -26,6 +26,7 @@ export type AppStore = DemoState & {
 const Context = createContext<AppStore | null>(null);
 const optionalError = (error: { message: string } | null): void => { if (error) throw new Error(error.message); };
 const shortName = (name: string) => name.split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
+const guestProfile = { id: 'guest', name: 'Ospite', initials: 'O', city: 'Roma', bio: '' };
 
 const toEvent = (row: Record<string, unknown>, author: Record<string, unknown> | undefined): SpotEvent => ({
   id: String(row.id), hostId: String(row.host_id), hostName: String(author?.display_name || 'Organizzatore'),
@@ -59,23 +60,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!supabase) return;
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    const { data: { session }, error: authErr } = await supabase.auth.getSession();
     optionalError(authErr);
-    if (!user) { setUserId(null); setLoading(false); return; }
-    setUserId(user.id);
-    const [eventsRes, profilesRes, membershipRes, messagesRes, venueRes] = await Promise.all([
+    const user = session?.user ?? null;
+    setUserId(user?.id ?? null);
+
+    const profileFields = user ? 'id, display_name, city, bio' : 'id, display_name';
+    const [eventsRes, profilesRes] = await Promise.all([
       supabase.from('events').select('*').eq('status', 'published').order('starts_at', { ascending: true }),
-      supabase.from('profiles').select('id, display_name, city, bio'),
+      supabase.from('profiles').select(profileFields),
+    ]);
+    for (const res of [eventsRes, profilesRes]) optionalError(res.error);
+    const profiles = new Map<string, Record<string, unknown>>((profilesRes.data || []).map(p => [String(p.id), p as Record<string, unknown>]));
+    const publicEvents = (eventsRes.data || []).map(e => toEvent(e, profiles.get(e.host_id)));
+
+    if (!user) {
+      setData({ events: publicEvents, attendances: [], messages: [], venues: [], profile: guestProfile, pro: false });
+      setLoading(false);
+      return;
+    }
+
+    const [membershipRes, messagesRes, venueRes] = await Promise.all([
       supabase.from('attendances').select('*').order('created_at', { ascending: false }),
       supabase.from('chat_messages').select('*').order('created_at', { ascending: false }).limit(300),
       supabase.from('event_private').select('event_id, address, directions'),
     ]);
-    for (const res of [eventsRes, profilesRes, membershipRes, messagesRes, venueRes]) optionalError(res.error);
-    const profiles = new Map<string, Record<string, unknown>>((profilesRes.data || []).map(p => [String(p.id), p as Record<string, unknown>]));
+    for (const res of [membershipRes, messagesRes, venueRes]) optionalError(res.error);
     const current = profiles.get(user.id);
     const name = String(current?.display_name || user.email?.split('@')[0] || 'Ballerino');
     setData({
-      events: (eventsRes.data || []).map(e => toEvent(e, profiles.get(e.host_id))),
+      events: publicEvents,
       attendances: (membershipRes.data || []).map(a => toAttendance(a, profiles.get(a.user_id))),
       messages: (messagesRes.data || []).map(m => toMessage(m, profiles.get(m.user_id))).reverse(),
       venues: (venueRes.data || []).map(v => ({ eventId: v.event_id as string, address: v.address as string, directions: v.directions as string })) as PrivateVenue[],
@@ -91,17 +105,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     void refresh().catch(err => { if (mounted) { setError(String(err.message)); setLoading(false); } });
     const { data: auth } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      if (!session) { setUserId(null); setLoading(false); return; }
+      if (!session) {
+        setUserId(null);
+        setData(s => ({ ...s, attendances: [], messages: [], venues: [], profile: guestProfile }));
+      }
       // Defer queries outside the auth callback to prevent auth-client deadlocks.
       setTimeout(() => { if (mounted) void refresh().catch(err => setError(String(err.message))); }, 0);
     });
-    const realtime = supabase.channel('ritmo-activity')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, () => { if (mounted) void refresh().catch(() => {}); })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => { if (mounted) void refresh().catch(() => {}); })
+
+    const publicRealtime = supabase.channel('ritmo-public-events')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => { if (mounted) void refresh().catch(() => {}); })
       .subscribe();
-    return () => { mounted = false; auth.subscription.unsubscribe(); void supabase?.removeChannel(realtime); };
-  }, [refresh]);
+
+    const privateRealtime = userId ? supabase.channel('ritmo-private-activity')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendances' }, () => { if (mounted) void refresh().catch(() => {}); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => { if (mounted) void refresh().catch(() => {}); })
+      .subscribe() : null;
+
+    return () => {
+      mounted = false;
+      auth.subscription.unsubscribe();
+      void supabase?.removeChannel(publicRealtime);
+      if (privateRealtime) void supabase?.removeChannel(privateRealtime);
+    };
+  }, [refresh, userId]);
 
   const signIn = useCallback(async (email: string) => {
     if (!supabase) return;
@@ -115,7 +142,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const { error: signErr } = await supabase.auth.signOut();
     if (signErr) fail(signErr);
     setUserId(null); setPendingEmail(null);
-  }, [fail]);
+    setData(s => ({ ...s, attendances: [], messages: [], venues: [], profile: guestProfile }));
+    await refresh();
+  }, [fail, refresh]);
 
   const join = useCallback(async (eventId: string) => {
     if (!userId) return;
